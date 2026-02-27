@@ -3,7 +3,7 @@
 <title>Static Call Graph - [Opdracht 1\Opdracht 1.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image Opdracht 1\Opdracht 1.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Fri Feb 27 10:05:08 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Fri Feb 27 10:14:23 2026
 <BR><P>
 <H3>Maximum Stack Usage =        408 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -635,7 +635,7 @@ Global Symbols
 
 <P><STRONG><a name="[ee]"></a>__aeabi_memcpy</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, rt_memcpy_v6.o(.text))
 <BR><BR>[Called By]<UL><LI><a href="#[dd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_control_xfer
-<LI><a href="#[f5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_xfer_cb
+<LI><a href="#[f6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_xfer_cb
 <LI><a href="#[ed]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_fifo_peek_n_access_mode
 <LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_hwfifo_read
 <LI><a href="#[c9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_hwfifo_write
@@ -653,7 +653,7 @@ Global Symbols
 <LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 <LI><a href="#[7a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;midid_init
 <LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;configuration_reset
-<LI><a href="#[f2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_rhport_init
+<LI><a href="#[f3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_rhport_init
 </UL>
 
 <P><STRONG><a name="[ac]"></a>__aeabi_memclr8</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, rt_memclr_w.o(.text))
@@ -750,7 +750,7 @@ Global Symbols
 </UL>
 <BR>[Calls]<UL><LI><a href="#[9a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
 </UL>
-<BR>[Called By]<UL><LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
+<BR>[Called By]<UL><LI><a href="#[f1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_mount_cb
 </UL>
 
 <P><STRONG><a name="[98]"></a>HAL_EXTI_IRQHandler</STRONG> (Thumb, 84 bytes, Stack size 24 bytes, stm32h5xx_hal_exti.o(.text.HAL_EXTI_IRQHandler))
@@ -1000,16 +1000,16 @@ Global Symbols
 </UL>
 <BR>[Calls]<UL><LI><a href="#[b9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;btable_set_rx_bufsize
 </UL>
-<BR>[Called By]<UL><LI><a href="#[f5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_xfer_cb
+<BR>[Called By]<UL><LI><a href="#[f6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_xfer_cb
 </UL>
 
 <P><STRONG><a name="[103]"></a>dcd_edpt_clear_stall</STRONG> (Thumb, 138 bytes, Stack size 8 bytes, dcd_stm32_fsdev.o(.text.dcd_edpt_clear_stall))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = dcd_edpt_clear_stall
 </UL>
-<BR>[Called By]<UL><LI><a href="#[fb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_edpt_clear_stall
+<BR>[Called By]<UL><LI><a href="#[fc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_edpt_clear_stall
 </UL>
 
-<P><STRONG><a name="[fd]"></a>dcd_edpt_close_all</STRONG> (Thumb, 108 bytes, Stack size 8 bytes, dcd_stm32_fsdev.o(.text.dcd_edpt_close_all))
+<P><STRONG><a name="[fe]"></a>dcd_edpt_close_all</STRONG> (Thumb, 108 bytes, Stack size 8 bytes, dcd_stm32_fsdev.o(.text.dcd_edpt_close_all))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = dcd_edpt_close_all
 </UL>
 <BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
@@ -1029,7 +1029,7 @@ Global Symbols
 </UL>
 <BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 <LI><a href="#[100]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_edpt_stall
-<LI><a href="#[f5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_xfer_cb
+<LI><a href="#[f6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_xfer_cb
 </UL>
 
 <P><STRONG><a name="[bd]"></a>dcd_edpt_xfer</STRONG> (Thumb, 172 bytes, Stack size 24 bytes, dcd_stm32_fsdev.o(.text.dcd_edpt_xfer))
@@ -1065,16 +1065,16 @@ Global Symbols
 <BR>[Calls]<UL><LI><a href="#[c4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;fsdev_core_reset
 <LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;handle_bus_reset
 </UL>
-<BR>[Called By]<UL><LI><a href="#[f2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_rhport_init
+<BR>[Called By]<UL><LI><a href="#[f3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_rhport_init
 </UL>
 
 <P><STRONG><a name="[105]"></a>dcd_int_disable</STRONG> (Thumb, 24 bytes, Stack size 0 bytes, dcd_stm32_fsdev.o(.text.dcd_int_disable))
 <BR><BR>[Called By]<UL><LI><a href="#[80]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_int_set
 </UL>
 
-<P><STRONG><a name="[f4]"></a>dcd_int_enable</STRONG> (Thumb, 24 bytes, Stack size 0 bytes, dcd_stm32_fsdev.o(.text.dcd_int_enable))
+<P><STRONG><a name="[f5]"></a>dcd_int_enable</STRONG> (Thumb, 24 bytes, Stack size 0 bytes, dcd_stm32_fsdev.o(.text.dcd_int_enable))
 <BR><BR>[Called By]<UL><LI><a href="#[80]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_int_set
-<LI><a href="#[f2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_rhport_init
+<LI><a href="#[f3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_rhport_init
 </UL>
 
 <P><STRONG><a name="[b5]"></a>dcd_int_handler</STRONG> (Thumb, 894 bytes, Stack size 72 bytes, dcd_stm32_fsdev.o(.text.dcd_int_handler))
@@ -1098,7 +1098,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 </UL>
 
-<P><STRONG><a name="[fc]"></a>dcd_sof_enable</STRONG> (Thumb, 22 bytes, Stack size 0 bytes, dcd_stm32_fsdev.o(.text.dcd_sof_enable))
+<P><STRONG><a name="[fd]"></a>dcd_sof_enable</STRONG> (Thumb, 22 bytes, Stack size 0 bytes, dcd_stm32_fsdev.o(.text.dcd_sof_enable))
 <BR><BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 </UL>
 
@@ -1108,18 +1108,17 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_init
 </UL>
 
-<P><STRONG><a name="[8c]"></a>main</STRONG> (Thumb, 1700 bytes, Stack size 112 bytes, main.o(.text.main))
+<P><STRONG><a name="[8c]"></a>main</STRONG> (Thumb, 1632 bytes, Stack size 112 bytes, main.o(.text.main))
 <BR><BR>[Stack]<UL><LI>Max Depth = 408 + Unknown Stack Size
 <LI>Call Chain = main &rArr; HAL_PCD_Init &rArr; HAL_PCD_MspInit &rArr; HAL_RCCEx_PeriphCLKConfig &rArr; RCCEx_PLL2_Config
 </UL>
 <BR>[Calls]<UL><LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_midi_n_packet_read
 <LI><a href="#[d2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_midi_n_available
 <LI><a href="#[d1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_midi_n_packet_write
-<LI><a href="#[9a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
 <LI><a href="#[d0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_mounted
+<LI><a href="#[9a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
 <LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 <LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tusb_rhport_init
-<LI><a href="#[99]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_Delay
 <LI><a href="#[cc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_NVIC_EnableIRQ
 <LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_NVIC_SetPriority
 <LI><a href="#[a4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_PCD_Init
@@ -1267,7 +1266,7 @@ Global Symbols
 <P><STRONG><a name="[d5]"></a>tu_fifo_clear</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, tusb_fifo.o(.text.tu_fifo_clear))
 <BR><BR>[Called By]<UL><LI><a href="#[7d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;midid_open
 <LI><a href="#[7c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;midid_reset
-<LI><a href="#[f2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_rhport_init
+<LI><a href="#[f3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_rhport_init
 </UL>
 
 <P><STRONG><a name="[e6]"></a>tu_fifo_config</STRONG> (Thumb, 30 bytes, Stack size 0 bytes, tusb_fifo.o(.text.tu_fifo_config))
@@ -1388,23 +1387,29 @@ Global Symbols
 <LI><a href="#[ec]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_edpt_stream_write
 <LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_edpt_stream_write_xfer
 </UL>
-<BR>[Called By]<UL><LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
+<BR>[Called By]<UL><LI><a href="#[f1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_mount_cb
+<LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
 <P><STRONG><a name="[d8]"></a>tud_midi_rx_cb</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, midi_device.o(.text.tud_midi_rx_cb))
 <BR><BR>[Called By]<UL><LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;midid_xfer_cb
 </UL>
 
-<P><STRONG><a name="[fe]"></a>tud_mount_cb</STRONG> (Thumb, 16 bytes, Stack size 0 bytes, main.o(.text.tud_mount_cb))
-<BR><BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
+<P><STRONG><a name="[f1]"></a>tud_mount_cb</STRONG> (Thumb, 64 bytes, Stack size 16 bytes, main.o(.text.tud_mount_cb))
+<BR><BR>[Stack]<UL><LI>Max Depth = 224<LI>Call Chain = tud_mount_cb &rArr; tud_midi_n_packet_write &rArr; tu_edpt_stream_write &rArr; tu_edpt_stream_write_xfer &rArr; usbd_edpt_xfer_fifo &rArr; dcd_edpt_xfer_fifo &rArr; dcd_transmit_packet &rArr; tu_fifo_read_n_access_mode &rArr; tu_fifo_peek_n_access_mode
+</UL>
+<BR>[Calls]<UL><LI><a href="#[99]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_Delay
+<LI><a href="#[d1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_midi_n_packet_write
+</UL>
+<BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 </UL>
 
 <P><STRONG><a name="[d0]"></a>tud_mounted</STRONG> (Thumb, 18 bytes, Stack size 0 bytes, usbd.o(.text.tud_mounted))
-<BR><BR>[Called By]<UL><LI><a href="#[f1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_resume_cb
+<BR><BR>[Called By]<UL><LI><a href="#[f2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_resume_cb
 <LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[f1]"></a>tud_resume_cb</STRONG> (Thumb, 30 bytes, Stack size 8 bytes, main.o(.text.tud_resume_cb))
+<P><STRONG><a name="[f2]"></a>tud_resume_cb</STRONG> (Thumb, 30 bytes, Stack size 8 bytes, main.o(.text.tud_resume_cb))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = tud_resume_cb
 </UL>
 <BR>[Calls]<UL><LI><a href="#[d0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_mounted
@@ -1412,50 +1417,50 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 </UL>
 
-<P><STRONG><a name="[f2]"></a>tud_rhport_init</STRONG> (Thumb, 260 bytes, Stack size 32 bytes, usbd.o(.text.tud_rhport_init))
+<P><STRONG><a name="[f3]"></a>tud_rhport_init</STRONG> (Thumb, 260 bytes, Stack size 32 bytes, usbd.o(.text.tud_rhport_init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 88 + Unknown Stack Size
 <LI>Call Chain = tud_rhport_init &rArr; dcd_init &rArr; handle_bus_reset &rArr; dcd_ep_alloc
 </UL>
 <BR>[Calls]<UL><LI><a href="#[b7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr4
 <LI><a href="#[c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_init
-<LI><a href="#[f3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_app_driver_get_cb
-<LI><a href="#[f4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_int_enable
+<LI><a href="#[f4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_app_driver_get_cb
+<LI><a href="#[f5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_int_enable
 <LI><a href="#[d5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_fifo_clear
 </UL>
 <BR>[Called By]<UL><LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tusb_rhport_init
 </UL>
 
-<P><STRONG><a name="[f6]"></a>tud_sof_cb</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, usbd.o(.text.tud_sof_cb))
+<P><STRONG><a name="[f7]"></a>tud_sof_cb</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, usbd.o(.text.tud_sof_cb))
 <BR><BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 </UL>
 
-<P><STRONG><a name="[f7]"></a>tud_suspend_cb</STRONG> (Thumb, 16 bytes, Stack size 0 bytes, main.o(.text.tud_suspend_cb))
+<P><STRONG><a name="[f8]"></a>tud_suspend_cb</STRONG> (Thumb, 16 bytes, Stack size 0 bytes, main.o(.text.tud_suspend_cb))
 <BR><BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 </UL>
 
 <P><STRONG><a name="[cf]"></a>tud_task_ext</STRONG> (Thumb, 1632 bytes, Stack size 64 bytes, usbd.o(.text.tud_task_ext))
-<BR><BR>[Stack]<UL><LI>Max Depth = 256 + Unknown Stack Size
-<LI>Call Chain = tud_task_ext &rArr; process_get_descriptor &rArr; tud_control_xfer &rArr; usbd_edpt_xfer &rArr; dcd_edpt_xfer &rArr; dcd_transmit_packet &rArr; tu_fifo_read_n_access_mode &rArr; tu_fifo_peek_n_access_mode
+<BR><BR>[Stack]<UL><LI>Max Depth = 288 + Unknown Stack Size
+<LI>Call Chain = tud_task_ext &rArr; tud_mount_cb &rArr; tud_midi_n_packet_write &rArr; tu_edpt_stream_write &rArr; tu_edpt_stream_write_xfer &rArr; usbd_edpt_xfer_fifo &rArr; dcd_edpt_xfer_fifo &rArr; dcd_transmit_packet &rArr; tu_fifo_read_n_access_mode &rArr; tu_fifo_peek_n_access_mode
 </UL>
-<BR>[Calls]<UL><LI><a href="#[f1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_resume_cb
-<LI><a href="#[f7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_suspend_cb
-<LI><a href="#[fa]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_umount_cb
-<LI><a href="#[fe]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_mount_cb
+<BR>[Calls]<UL><LI><a href="#[f2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_resume_cb
+<LI><a href="#[f8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_suspend_cb
+<LI><a href="#[fb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_umount_cb
+<LI><a href="#[f1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_mount_cb
 <LI><a href="#[b7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr4
 <LI><a href="#[101]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_edpt_stall
 <LI><a href="#[ef]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_control_status
 <LI><a href="#[100]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_edpt_stall
 <LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_set_address
 <LI><a href="#[ff]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_set_request
-<LI><a href="#[fd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_edpt_close_all
+<LI><a href="#[fe]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_edpt_close_all
 <LI><a href="#[dd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_control_xfer
-<LI><a href="#[fb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_edpt_clear_stall
-<LI><a href="#[f8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_set_complete_callback
-<LI><a href="#[f5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_xfer_cb
-<LI><a href="#[f9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_reset
-<LI><a href="#[fc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_sof_enable
+<LI><a href="#[fc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_edpt_clear_stall
+<LI><a href="#[f9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_set_complete_callback
+<LI><a href="#[f6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_xfer_cb
+<LI><a href="#[fa]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_reset
+<LI><a href="#[fd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_sof_enable
 <LI><a href="#[79]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_vendor_control_xfer_cb
-<LI><a href="#[f6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_sof_cb
+<LI><a href="#[f7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_sof_cb
 <LI><a href="#[db]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;process_get_descriptor
 <LI><a href="#[e3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;process_set_config
 <LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;configuration_reset
@@ -1464,7 +1469,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[fa]"></a>tud_umount_cb</STRONG> (Thumb, 14 bytes, Stack size 0 bytes, main.o(.text.tud_umount_cb))
+<P><STRONG><a name="[fb]"></a>tud_umount_cb</STRONG> (Thumb, 14 bytes, Stack size 0 bytes, main.o(.text.tud_umount_cb))
 <BR><BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 </UL>
 
@@ -1477,20 +1482,20 @@ Global Symbols
 <BR><BR>[Stack]<UL><LI>Max Depth = 96 + Unknown Stack Size
 <LI>Call Chain = tusb_rhport_init &rArr; tud_rhport_init &rArr; dcd_init &rArr; handle_bus_reset &rArr; dcd_ep_alloc
 </UL>
-<BR>[Calls]<UL><LI><a href="#[f2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_rhport_init
+<BR>[Calls]<UL><LI><a href="#[f3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_rhport_init
 </UL>
 <BR>[Called By]<UL><LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[f3]"></a>usbd_app_driver_get_cb</STRONG> (Thumb, 10 bytes, Stack size 0 bytes, usbd.o(.text.usbd_app_driver_get_cb))
-<BR><BR>[Called By]<UL><LI><a href="#[f2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_rhport_init
+<P><STRONG><a name="[f4]"></a>usbd_app_driver_get_cb</STRONG> (Thumb, 10 bytes, Stack size 0 bytes, usbd.o(.text.usbd_app_driver_get_cb))
+<BR><BR>[Called By]<UL><LI><a href="#[f3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_rhport_init
 </UL>
 
-<P><STRONG><a name="[f9]"></a>usbd_control_reset</STRONG> (Thumb, 22 bytes, Stack size 0 bytes, usbd_control.o(.text.usbd_control_reset))
+<P><STRONG><a name="[fa]"></a>usbd_control_reset</STRONG> (Thumb, 22 bytes, Stack size 0 bytes, usbd_control.o(.text.usbd_control_reset))
 <BR><BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 </UL>
 
-<P><STRONG><a name="[f8]"></a>usbd_control_set_complete_callback</STRONG> (Thumb, 12 bytes, Stack size 0 bytes, usbd_control.o(.text.usbd_control_set_complete_callback))
+<P><STRONG><a name="[f9]"></a>usbd_control_set_complete_callback</STRONG> (Thumb, 12 bytes, Stack size 0 bytes, usbd_control.o(.text.usbd_control_set_complete_callback))
 <BR><BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 </UL>
 
@@ -1498,7 +1503,7 @@ Global Symbols
 <BR><BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 </UL>
 
-<P><STRONG><a name="[f5]"></a>usbd_control_xfer_cb</STRONG> (Thumb, 348 bytes, Stack size 32 bytes, usbd_control.o(.text.usbd_control_xfer_cb))
+<P><STRONG><a name="[f6]"></a>usbd_control_xfer_cb</STRONG> (Thumb, 348 bytes, Stack size 32 bytes, usbd_control.o(.text.usbd_control_xfer_cb))
 <BR><BR>[Stack]<UL><LI>Max Depth = 184<LI>Call Chain = usbd_control_xfer_cb &rArr; usbd_edpt_xfer &rArr; dcd_edpt_xfer &rArr; dcd_transmit_packet &rArr; tu_fifo_read_n_access_mode &rArr; tu_fifo_peek_n_access_mode
 </UL>
 <BR>[Calls]<UL><LI><a href="#[ee]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy
@@ -1517,7 +1522,7 @@ Global Symbols
 <LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_edpt_stream_write_zlp_if_needed
 </UL>
 
-<P><STRONG><a name="[fb]"></a>usbd_edpt_clear_stall</STRONG> (Thumb, 64 bytes, Stack size 8 bytes, usbd.o(.text.usbd_edpt_clear_stall))
+<P><STRONG><a name="[fc]"></a>usbd_edpt_clear_stall</STRONG> (Thumb, 64 bytes, Stack size 8 bytes, usbd.o(.text.usbd_edpt_clear_stall))
 <BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = usbd_edpt_clear_stall &rArr; dcd_edpt_clear_stall
 </UL>
 <BR>[Calls]<UL><LI><a href="#[103]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_edpt_clear_stall
@@ -1555,7 +1560,7 @@ Global Symbols
 </UL>
 <BR>[Called By]<UL><LI><a href="#[ef]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_control_status
 <LI><a href="#[dd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_control_xfer
-<LI><a href="#[f5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_xfer_cb
+<LI><a href="#[f6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_xfer_cb
 <LI><a href="#[d7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_edpt_stream_read_xfer
 <LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_edpt_stream_write_xfer
 <LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_edpt_stream_write_zlp_if_needed
@@ -1572,7 +1577,7 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[80]"></a>usbd_int_set</STRONG> (Thumb, 24 bytes, Stack size 0 bytes, usbd.o(.text.usbd_int_set))
-<BR><BR>[Calls]<UL><LI><a href="#[f4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_int_enable
+<BR><BR>[Calls]<UL><LI><a href="#[f5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_int_enable
 <LI><a href="#[105]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_int_disable
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> usbd.o(.data..L_MergedGlobals)

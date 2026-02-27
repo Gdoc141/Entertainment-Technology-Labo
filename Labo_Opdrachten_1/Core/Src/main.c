@@ -205,9 +205,10 @@ int main(void)
   // ===== Main Application Loop =====
   while (1)
   {
-    tud_task();              // Process USB device stack requests (call as often as possible)
-    keypad_task();           // Scan keypad & send MIDI Note On/Off
-    midi_task();             // Handle incoming MIDI traffic (if any)
+    tud_task();              // USB stack servicing (zo vaak mogelijk aanroepen!)
+    keypad_task();           // Matrix scan + MIDI Note On/Off
+    midi_task();             // Inkomende MIDI legen + auto test-noot
+    led_blinking_task();     // LED status (no-op: PA5=SCK, geen conflict)
   }
 }
 
@@ -216,20 +217,12 @@ int main(void)
 //--------------------------------------------------------------------+
 
 // Invoked when device is mounted (USB host detected)
-// Used for LED feedback: fast blink = mounted
 void tud_mount_cb(void)
 {
   blink_interval_ms = BLINK_MOUNTED;
-
-  // ===== USB TEST NOTE =====
-  // Stuur automatisch C4 (noot 60) zodra USB verbonden is.
-  // Als je dit ziet in MIDI-OX/MIDI View → USB MIDI werkt correct.
-  // Als je dit NIET ziet → USB enumereert niet → PC herkent device niet.
-  uint8_t test_on[4]  = { 0x09, 0x90, 60, 100 };  // Note On  C4 vel=100
-  uint8_t test_off[4] = { 0x08, 0x80, 60,   0 };  // Note Off C4
-  tud_midi_packet_write(test_on);
-  HAL_Delay(200);   // kort even klinken
-  tud_midi_packet_write(test_off);
+  // NOTE: GEEN HAL_Delay hier! Blocking in een USB callback
+  // zorgt dat de host een timeout krijgt en het device losgekoppeld wordt.
+  // Test-noot wordt verstuurd via de 2-seconden timer in midi_task().
 }
 
 // Invoked when device is unmounted (USB host disconnected)
@@ -271,14 +264,48 @@ void midi_task(void)
   }
 
   // ===== Read & Discard Incoming MIDI =====
-  // Lees alle inkomende MIDI packets van USB host en verwerp ze
-  // (dit voorkomt dat de sender buffer vul wordt en blocking)
   while (tud_midi_available())
   {
     uint8_t packet[4];
     tud_midi_packet_read(packet);
-    // In een volledigere implementatie zou je hier
-    // control change, program change, etc. verwerken
+  }
+
+  // ===== DIAGNOSE: Automatische test-noot elke 2 seconden =====
+  //
+  // STAP 1 - USB diagnose:
+  //   Als je in MIDI View elke ~2s een C4 (noot 60) ziet verschijnen
+  //   → USB MIDI werkt correct. Probleem zit dan in de keypad/SPI.
+  //
+  // STAP 2 - Als je NIETS ziet:
+  //   → USB enumereert niet.
+  //   Controleer:
+  //     a) Gebruik je CN4 (USB FS poort) en NIET CN5 (ST-Link poort)?
+  //        CN4 = kleine USB connector NAAST de power jumper
+  //        CN5 = grote USB connector bij de ST-Link chip
+  //     b) Device Manager → Sound, video and game controllers
+  //        → moet "TinyUSB MIDI" tonen zonder uitroepteken
+  //
+  static uint32_t test_ms    = 0;
+  static bool     note_on_sent = false;
+
+  uint32_t now = board_millis();
+
+  if (!note_on_sent && (now - test_ms) >= 2000u)
+  {
+    // Stuur Note On C4  (noot 60, velocity 100)
+    uint8_t on[4] = { 0x09, 0x90, 60, 100 };
+    tud_midi_packet_write(on);
+    note_on_sent = true;
+    test_ms = now;
+  }
+  else if (note_on_sent && (now - test_ms) >= 200u)
+  {
+    // 200ms later: Stuur Note Off C4
+    uint8_t off[4] = { 0x08, 0x80, 60, 0 };
+    tud_midi_packet_write(off);
+    note_on_sent = false;
+    // test_ms NIET resetten: volgende On prik 2s na de Off
+    test_ms = now;
   }
 }
 
