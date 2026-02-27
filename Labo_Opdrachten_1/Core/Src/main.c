@@ -411,6 +411,34 @@ void keypad_task(void)
     return;
   }
 
+  // ===== RAW SCAN DEBUG =====
+  // Stuur voor elke rij een MIDI Control Change met de ruwe GPIOA waarde.
+  // Dit laat zien wat de MCP23S17 echt leest, los van de noot-logica.
+  //
+  // In MIDI View zie je Controller berichten:
+  //   CC#0 value = rij 0 kolommen  (0x0F = alle los, 0x0E = kolom 0 ingedrukt)
+  //   CC#1 value = rij 1 kolommen
+  //   CC#2 value = rij 2 kolommen
+  //   CC#3 value = rij 3 kolommen
+  //
+  // Als je NOOIT iets anders dan 0x0F (=15) ziet → MCP leest niet, check bedrading
+  // Als je bij indrukken 0x0E/0x0D/0x0B/0x07 ziet → MCP leest WEL → scan logica klopt
+  //
+  for (int dbg = 0; dbg < 4; dbg++)
+  {
+    // Stuur alleen als waarde veranderd is t.o.v. vorige cyclus
+    if ((keypad_state[dbg] & 0x0F) != (keypad_prev[dbg] & 0x0F))
+    {
+      uint8_t cc[4] = {
+        0x0B,                          // CIN = Control Change
+        0xB0,                          // Control Change op channel 1
+        (uint8_t)dbg,                  // CC nummer = rij index (0-3)
+        (uint8_t)(keypad_state[dbg] & 0x7F)  // Ruwe waarde van GPIOA
+      };
+      tud_midi_packet_write(cc);
+    }
+  }
+
   // ===== MIDI Configuration =====
   uint8_t cable_num = 0;   // USB MIDI jack 0
   uint8_t channel = 0;     // MIDI Channel 1 (0-index)
