@@ -54,7 +54,7 @@ extern "C" {
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
-void MX_USB_PCD_Init(void);
+/* MX_USB_PCD_Init removed: vervangen door MX_USB_Init() in main.c */
 
 /* USER CODE BEGIN EFP */
 

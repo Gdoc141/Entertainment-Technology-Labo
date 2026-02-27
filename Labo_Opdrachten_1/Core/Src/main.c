@@ -678,24 +678,24 @@ static uint8_t mcp23s17_read_reg(uint8_t reg)
 }
 
 // ===== MCP23S17 Initialization =====
-// OMGEWISSELD: GPIOA = rijen (outputs), GPIOB = kolommen (inputs + pull-ups)
+// GPIOA = kolommen (inputs + pull-ups), GPIOB = rijen (outputs)
 static void mcp23s17_init(void)
 {
-  // ===== Configure GPIOA (Rijen = outputs) =====
-  mcp23s17_write_reg(MCP_IODIRA, 0x00);      // GPA0-GPA3 = outputs
-  mcp23s17_write_reg(MCP_REG_GPIOA, 0x0F);  // Alle rijen HIGH (inactief)
+  // ===== Configure GPIOA (Kolommen = inputs + pull-ups) =====
+  mcp23s17_write_reg(MCP_IODIRA, 0x0F);      // GPA0-GPA3 = inputs
+  mcp23s17_write_reg(MCP_GPPUA,  0x0F);      // GPA0-GPA3 = pull-ups enabled
 
-  // ===== Configure GPIOB (Kolommen = inputs + pull-ups) =====
-  mcp23s17_write_reg(MCP_IODIRB, 0x0F);     // GPB0-GPB3 = inputs
-  mcp23s17_write_reg(MCP_GPPUB, 0x0F);      // GPB0-GPB3 = pull-ups enabled
+  // ===== Configure GPIOB (Rijen = outputs) =====
+  mcp23s17_write_reg(MCP_IODIRB, 0x00);      // GPB0-GPB3 = outputs
+  mcp23s17_write_reg(MCP_REG_GPIOB, 0x0F);  // Alle rijen HIGH (inactief)
 
   // ===== Initialize State Arrays =====
   for (int i = 0; i < 4; i++)
   {
-    keypad_state[i]     = 0x0F;
-    keypad_prev[i]      = 0x0F;
-    keypad_candidate[i] = 0x0F;
-    keypad_stable_cnt[i]= 0;
+    keypad_state[i]      = 0x0F;
+    keypad_prev[i]       = 0x0F;
+    keypad_candidate[i]  = 0x0F;
+    keypad_stable_cnt[i] = 0;
   }
 }
 
@@ -710,13 +710,13 @@ static void keypad_scan(void)
 {
   for (int row = 0; row < 4; row++)
   {
-    // Drijf enkel deze rij laag via GPIOA, andere rijen hoog
+    // Drijf enkel deze rij laag via GPIOB, andere rijen hoog
     uint8_t row_pattern = ~(1 << row) & 0x0F;
-    mcp23s17_write_reg(MCP_REG_GPIOA, row_pattern);
+    mcp23s17_write_reg(MCP_REG_GPIOB, row_pattern);
 
-    // Dubbele lezing van GPIOB (kolommen)
-    uint8_t read1 = mcp23s17_read_reg(MCP_REG_GPIOB) & 0x0F;
-    uint8_t read2 = mcp23s17_read_reg(MCP_REG_GPIOB) & 0x0F;
+    // Dubbele lezing van GPIOA (kolommen)
+    uint8_t read1 = mcp23s17_read_reg(MCP_REG_GPIOA) & 0x0F;
+    uint8_t read2 = mcp23s17_read_reg(MCP_REG_GPIOA) & 0x0F;
 
     if (read1 != read2)
     {
@@ -738,8 +738,8 @@ static void keypad_scan(void)
     }
   }
 
-  // Zet alle rijen terug hoog (inactief) via GPIOA
-  mcp23s17_write_reg(MCP_REG_GPIOA, 0x0F);
+  // Zet alle rijen terug hoog (inactief) via GPIOB
+  mcp23s17_write_reg(MCP_REG_GPIOB, 0x0F);
 }
 
 //--------------------------------------------------------------------+
