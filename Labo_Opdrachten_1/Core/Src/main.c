@@ -821,38 +821,26 @@ static void mcp23s17_init(void)
 // After scan, all rows returned to HIGH (inactive)
 static void keypad_scan(void)
 {
-  // 4x4 Matrix scanning logic:
-  // GPIOA (inputs with pull-ups): Columns C1-C4 = GPA0-3
-  // GPIOB (outputs): Rows R1-R4 = GPB0-3
-  //
-  // For each row:
-  //   - Set GPB0-3 to have only current row LOW (0), others HIGH (1)
-  //   - Wait ~2ms for settling
-  //   - Read GPA0-3 to see which columns went LOW
-  //   - Store in keypad_state[row]
-  
   for (int row = 0; row < 4; row++)
   {
-    // Create row pattern: only this row LOW, others HIGH
-    // Voorbeeld voor row=0: GPB = 0b1110 = ~0b0001 & 0x0F
+    // Drijf enkel deze rij laag, andere rijen hoog
     uint8_t row_pattern = ~(1 << row) & 0x0F;
-    
-    // Drive only this row LOW
     mcp23s17_write_reg(MCP_REG_GPIOB, row_pattern);
-    
-    // No HAL_Delay needed: bit-bang SPI is slow enough for the signal to settle
-    
-    // Read column states for this row
-    // Bit = 0: key pressed (column pulled low by switch)
-    // Bit = 1: key not pressed (column held high by resistor)
-    uint8_t cols = mcp23s17_read_reg(MCP_REG_GPIOA);
-    
-    // Store for this row
-    keypad_state[row] = cols;
+
+    // Dubbele lezing: lees GPIOA twee keer en accepteer alleen als beide gelijk zijn.
+    // Dit filtert SPI-glitches veroorzaakt door losse draden of ruis op de lijn.
+    // Mask & 0x0F: bits 4-7 zijn outputs op GPIOA, die bits negeren we.
+    uint8_t read1 = mcp23s17_read_reg(MCP_REG_GPIOA) & 0x0F;
+    uint8_t read2 = mcp23s17_read_reg(MCP_REG_GPIOA) & 0x0F;
+
+    if (read1 == read2)
+    {
+      keypad_state[row] = read1;  // Stabiele waarde: sla op
+    }
+    // Als read1 != read2: SPI ruis → keypad_state[row] ongewijzigd laten
   }
-  
-  // Return all rows to HIGH (all inactive)
-  // This prevents ghosting on passive matrix
+
+  // Zet alle rijen terug hoog (inactief)
   mcp23s17_write_reg(MCP_REG_GPIOB, 0x0F);
 }
 
