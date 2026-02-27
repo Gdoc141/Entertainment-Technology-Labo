@@ -42,6 +42,69 @@
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USB_Init(void);
+static void MX_SPI1_Init(void);
+
+//--------------------------------------------------------------------+
+// MCP23S17 SPI Keypad Configuration
+//--------------------------------------------------------------------+
+// MCP23S17: 16-pin SPI I/O expander
+// Hardwired I2C address: 0x40 (A0, A1, A2 all connected to GND)
+//
+// GPIO Mapping:
+//   GPIOA (bits 0-3): Kolommen = inputs met pull-ups (C1-C4)
+//   GPIOB (bits 0-3): Rijen = outputs (R1-R4)
+//
+// SPI Pins:
+//   PA5  = SCK (D13)
+//   PA6  = MISO (D12)
+//   PA7  = MOSI (D11)
+//   PA10 = CS (D10) - Software controlled
+//
+#define MCP23S17_ADDR   0x40  // Hardwired address (A0, A1, A2 = GND)
+#define MCP_CS_PORT     GPIOA
+#define MCP_CS_PIN      GPIO_PIN_10
+
+// MCP23S17 Register Addresses (Sequential Mode)
+#define IODIRA    0x00  // I/O Direction Register A (0=output, 1=input)
+#define IODIRB    0x01  // I/O Direction Register B
+#define GPPUA     0x0C  // GPIO Pull-Up Resistor A (1=enabled)
+#define GPPUB     0x0D  // GPIO Pull-Up Resistor B
+#define GPIOA     0x12  // GPIO Port A
+#define GPIOB     0x13  // GPIO Port B
+
+SPI_HandleTypeDef hspi1;
+
+// Matrix state buffers
+// keypad_state: huidige aflezing van matrix (0=ingedrukt, 1=los)
+// keypad_prev: vorige aflezing (voor edge detection)
+uint8_t keypad_state[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+uint8_t keypad_prev[4]  = {0xFF, 0xFF, 0xFF, 0xFF};
+
+// MIDI Note Mapping Table
+// Chromatische schaal: C majeur getraponeerd over 4 octaven
+// note_map[row][col] = MIDI noot nummer (0-127)
+//
+// Matrix layout:
+//   Rij 0 (GPB0 laag): C4(60), D4(62), E4(64), F4(65)
+//   Rij 1 (GPB1 laag): G4(67), A4(69), B4(71), C5(72)
+//   Rij 2 (GPB2 laag): D5(74), E5(76), F5(77), G5(79)
+//   Rij 3 (GPB3 laag): A5(81), B5(83), C6(84), D6(86)
+//
+const uint8_t note_map[4][4] = {
+  {60, 62, 64, 65},  // Rij 1: C4 - F4
+  {67, 69, 71, 72},  // Rij 2: G4 - C5
+  {74, 76, 77, 79},  // Rij 3: D5 - G5
+  {81, 83, 84, 86}   // Rij 4: A5 - D6
+};
+
+// MCP23S17 SPI Driver Functions
+static void mcp23s17_write_reg(uint8_t reg, uint8_t value);  // Schrijf register via SPI
+static uint8_t mcp23s17_read_reg(uint8_t reg);              // Lees register via SPI
+static void mcp23s17_init(void);                             // Initialiseer MCP23S17
+
+// Keypad Scanning Functions
+static void keypad_scan(void);     // Scant matrix (drive rijen, lees kolommen)
+static void keypad_task(void);     // Detecteert indrukken/loslaten, stuurt MIDI
 
 // USB Device Core handle
 PCD_HandleTypeDef hpcd_USB_DRD_FS;
@@ -76,41 +139,51 @@ static inline void board_init_after_tusb(void) { (void)0; }
  */
 
 //--------------------------------------------------------------------+
-// MACRO CONSTANT TYPEDEF PROTYPES
+// Configuration: LED Blink Intervals
 //--------------------------------------------------------------------+
-
-/* Blink pattern
- * - 250 ms  : device not mounted
- * - 1000 ms : device mounted
- * - 2500 ms : device is suspended
- */
-enum  {
-  BLINK_NOT_MOUNTED = 250,
-  BLINK_MOUNTED     = 1000,
-  BLINK_SUSPENDED   = 2500,
+// LED feedback patterns voor USB connection state
+// Blink snelheid geeft aan wat de USB status is
+//
+// Interval values (milliseconden):
+//   250ms  = Slow blink   → Device NOT connected to USB host
+//   1000ms = Medium blink → Device connected to USB host (mounted)
+//   2500ms = Slow blink   → USB bus suspended (power saving mode)
+//
+enum {
+  BLINK_NOT_MOUNTED = 250,    // No USB host connected
+  BLINK_MOUNTED     = 1000,   // USB host connected (host detected)
+  BLINK_SUSPENDED   = 2500,   // USB suspended (low power mode)
 };
 
+// Current LED blink interval (changed by USB callbacks)
 static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
 
 void led_blinking_task(void);
 void midi_task(void);
 
 //--------------------------------------------------------------------+
-// MAIN
+// MAIN APPLICATION ENTRY POINT
 //--------------------------------------------------------------------+
 int main(void)
 {
-  // Standard CubeMX/HAL init
-  HAL_Init();
-  SystemClock_Config();
-  MX_GPIO_Init();
-  MX_USB_Init();
+  // ===== Hardware Initialization =====
+  HAL_Init();                  // STM32 Hardware Abstraction Layer init
+  SystemClock_Config();        // Configure system clock
+  MX_GPIO_Init();              // GPIO init (includes CS pin setup)
+  MX_SPI1_Init();              // Configure SPI1 for MCP23S17 communication
+  MX_USB_Init();               // USB Device peripheral init
 
-  // Nucleo LED init (LED2)
-  BSP_LED_Init(LED2);
-  BSP_LED_Off(LED2);
+  // ===== Nucleo Board Equipment =====
+  BSP_LED_Init(LED2);          // Initialize on-board LED (PA5)
+  BSP_LED_Off(LED2);           // LED off at startup
 
-  // init device stack on configured roothub port
+  // ===== MCP23S17 Keypad Initialization =====
+  // Configure GPIOA as inputs (kolommen) met pull-ups
+  // Configure GPIOB as outputs (rijen) voor matrix scanning
+  mcp23s17_init();
+
+  // ===== USB MIDI Device Stack =====
+  // Initialize TinyUSB as MIDI device
   tusb_rhport_init_t dev_init = {
     .role  = TUSB_ROLE_DEVICE,
     .speed = TUSB_SPEED_AUTO
@@ -119,163 +192,295 @@ int main(void)
 
   board_init_after_tusb();
 
+  // ===== Main Application Loop =====
   while (1)
   {
-    tud_task(); // tinyusb device task
-    led_blinking_task();
-    midi_task();
+    tud_task();              // Process USB device stack requests
+    led_blinking_task();     // Blink LED based on USB connection state
+    keypad_task();           // Scan keypad & send MIDI Note On/Off
+    midi_task();             // Handle incoming MIDI traffic (if any)
   }
 }
 
 //--------------------------------------------------------------------+
-// Device callbacks
+// Device Callbacks - USB Connection State
 //--------------------------------------------------------------------+
 
-// Invoked when device is mounted
+// Invoked when device is mounted (USB host detected)
+// Used for LED feedback: fast blink = mounted
 void tud_mount_cb(void)
 {
   blink_interval_ms = BLINK_MOUNTED;
 }
 
-// Invoked when device is unmounted
+// Invoked when device is unmounted (USB host disconnected)
+// Used for LED feedback: slow blink = not mounted
 void tud_umount_cb(void)
 {
   blink_interval_ms = BLINK_NOT_MOUNTED;
 }
 
-// Invoked when usb bus is suspended
-// remote_wakeup_en : if host allow us  to perform remote wakeup
-// Within 7ms, device must draw an average of current less than 2.5 mA from bus
+// Invoked when USB bus is suspended
+// Device must reduce current draw to <2.5mA
 void tud_suspend_cb(bool remote_wakeup_en)
 {
   (void) remote_wakeup_en;
   blink_interval_ms = BLINK_SUSPENDED;
 }
 
-// Invoked when usb bus is resumed
+// Invoked when USB bus is resumed
+// Device can resume normal operation
 void tud_resume_cb(void)
 {
   blink_interval_ms = tud_mounted() ? BLINK_MOUNTED : BLINK_NOT_MOUNTED;
 }
 
 //--------------------------------------------------------------------+
-// MIDI Task
+// MIDI Task - USB MIDI Traffic Handler
 //--------------------------------------------------------------------+
-
-// Variable that holds the current position in the sequence.
-uint32_t note_pos = 0;
-
-// Store example melody as an array of note values
-const uint8_t note_sequence[] = {
-  74,78,81,86,90,93,98,102,57,61,66,69,73,78,81,85,88,92,97,100,97,92,88,85,81,78,
-  74,69,66,62,57,62,66,69,74,78,81,86,90,93,97,102,97,93,90,85,81,78,73,68,64,61,
-  56,61,64,68,74,78,81,86,90,93,98,102
-};
-
+// Deze functie verwerkt inkomende MIDI data van de USB host
+// (bijv. MIDI clock, control change messages, etc.)
+//
+// Voor dit keyboard: we ontvangen maar ignoren (read-only instrument)
+//
 void midi_task(void)
 {
-  static uint32_t start_ms = 0;
-
-  uint8_t const cable_num = 0; // MIDI jack associated with USB endpoint
-  uint8_t const channel   = 0; // 0 for channel 1
-
-  // Only send MIDI if device is mounted
+  // Alleen verwerken als device gemount is
   if (!tud_mounted())
   {
     return;
   }
 
-  // Read/discard incoming traffic to avoid sender blocking
+  // ===== Read & Discard Incoming MIDI =====
+  // Lees alle inkomende MIDI packets van USB host en verwerp ze
+  // (dit voorkomt dat de sender buffer vul wordt en blocking)
   while (tud_midi_available())
   {
     uint8_t packet[4];
     tud_midi_packet_read(packet);
-  }
-
-  // send note periodically
-  if (board_millis() - start_ms < 286)
-  {
-    return; // not enough time
-  }
-  start_ms += 286;
-
-  // Previous positions in the note sequence.
-  int previous = (int)(note_pos - 1);
-
-  // If we currently are at position 0, set previous to last note in the sequence.
-  if (previous < 0)
-  {
-    previous = (int)(sizeof(note_sequence) - 1);
-  }
-
-  // Send Note On for current note (velocity 127)
-  // Use packet format: [cable_num_cin, status, data1, data2]
-  uint8_t note_on[4] = { 
-    (uint8_t)((cable_num << 4) | 0x09),  // Cable 0, Code Index Number 9 (Note On)
-    (uint8_t)(0x90 | channel),            // Note On, channel 1
-    note_sequence[note_pos],              // Note number
-    127                                    // Velocity
-  };
-  tud_midi_packet_write(note_on);
-
-  // Send Note Off for previous note
-  uint8_t note_off[4] = { 
-    (uint8_t)((cable_num << 4) | 0x08),  // Cable 0, Code Index Number 8 (Note Off)
-    (uint8_t)(0x80 | channel),            // Note Off, channel 1
-    note_sequence[previous],              // Note number
-    0                                      // Velocity
-  };
-  tud_midi_packet_write(note_off);
-
-  // Increment position
-  note_pos++;
-
-  // Wrap around
-  if (note_pos >= sizeof(note_sequence))
-  {
-    note_pos = 0;
+    // In een volledigere implementatie zou je hier
+    // control change, program change, etc. verwerken
   }
 }
 
 //--------------------------------------------------------------------+
-// BLINKING TASK
+// Keypad Scanning Task - Matrix Scan & MIDI Generation
 //--------------------------------------------------------------------+
+// Deze functie:
+// 1. Scant de 4x4 matrix elke 20ms (debouncing interval)
+// 2. Vergelijkt huidige state met vorige state
+// 3. Detecteert toets indrukken (1→0 transitie)
+// 4. Detecteert toets loslaten (0→1 transitie)
+// 5. Stuurt MIDI Note On/Off naar USB Host
+//
+// State representation:
+//   keypad_state[row][col] bit:
+//   - 0 = toets ingedrukt (GPB row low + GPA col low)
+//   - 1 = toets los (pull-ups opgetrokken)
+//
+
+static uint8_t active_notes[4][4] = {0};  // Track which notes are active (velocity=127)
+
+void keypad_task(void)
+{
+  // Scant de matrix (drive one row low, read columns)
+  keypad_scan();
+
+  // Alleen MIDI sturen als USB host aangesloten is
+  if (!tud_mounted())
+  {
+    return;
+  }
+
+  // Debouncing: Scan slechts elke 20ms (= stabilisatietijd)
+  static uint32_t scan_ms = 0;
+  if (board_millis() - scan_ms < 20)
+  {
+    return;
+  }
+  scan_ms = board_millis();
+
+  // ===== MIDI Configuration =====
+  uint8_t cable_num = 0;   // USB MIDI jack 0
+  uint8_t channel = 0;     // MIDI Channel 1 (0-index)
+
+  // ===== Matrix state change detection =====
+  for (int row = 0; row < 4; row++)
+  {
+    for (int col = 0; col < 4; col++)
+    {
+      // Extract bit for this key
+      uint8_t current_bit = (keypad_state[row] >> col) & 1;
+      uint8_t prev_bit = (keypad_prev[row] >> col) & 1;
+
+      // ===== KEY PRESSED (1→0 transition) =====
+      // Vorige state = 1 (los), huidige state = 0 (ingedrukt)
+      if (prev_bit && !current_bit && !active_notes[row][col])
+      {
+        uint8_t note = note_map[row][col];
+
+        // Build MIDI Note On packet
+        // Format: [cable+status, status_byte, data1, data2]
+        // Status 0x09 = Note On in CIN (Code Index Number)
+        uint8_t note_on[4] = {
+          (uint8_t)((cable_num << 4) | 0x09),  // Cable 0, CIN 9 (Note On)
+          (uint8_t)(0x90 | channel),            // Note On message + channel
+          note,                                  // MIDI note number
+          127                                    // Velocity (maximum)
+        };
+        tud_midi_packet_write(note_on);
+        active_notes[row][col] = note;  // Remember which note is active
+      }
+
+      // ===== KEY RELEASED (0→1 transition) =====
+      // Vorige state = 0 (ingedrukt), huidige state = 1 (los)
+      else if (!prev_bit && current_bit && active_notes[row][col])
+      {
+        uint8_t note = active_notes[row][col];
+
+        // Build MIDI Note Off packet
+        // Status 0x08 = Note Off in CIN (Code Index Number)
+        uint8_t note_off[4] = {
+          (uint8_t)((cable_num << 4) | 0x08),  // Cable 0, CIN 8 (Note Off)
+          (uint8_t)(0x80 | channel),            // Note Off message + channel
+          note,                                  // MIDI note number
+          0                                      // Velocity (ignored for Note Off)
+        };
+        tud_midi_packet_write(note_off);
+        active_notes[row][col] = 0;  // Mark note as inactive
+      }
+    }
+  }
+
+  // ===== Update state for next cycle =====
+  for (int i = 0; i < 4; i++)
+  {
+    keypad_prev[i] = keypad_state[i];
+  }
+}
+
+//--------------------------------------------------------------------+
+// LED Blinking Task
+//--------------------------------------------------------------------+
+// Blinkt on-board LED (LED2 = PA5) als USB status feedback
+//
+// Blink patterns:
+//   - 250ms interval: Not mounted (no USB connection)
+//   - 1000ms interval: Mounted (USB host connected)
+//   - 2500ms interval: Suspended (USB bus suspended)
+//
 void led_blinking_task(void)
 {
   static uint32_t start_ms = 0;
   static bool led_state = false;
 
-  // Blink every interval ms
-  if (board_millis() - start_ms < blink_interval_ms) return;
-  start_ms += blink_interval_ms;
+  // Check if it's time to toggle LED
+  // blink_interval_ms is set by tud_mount_cb, tud_umount_cb, tud_suspend_cb
+  if (board_millis() - start_ms < blink_interval_ms)
+  {
+    return;  // Not yet time to toggle
+  }
+  
+  start_ms += blink_interval_ms;  // Update timestamp
 
+  // Toggle LED
   board_led_write(led_state);
   led_state = (bool)(!led_state);
 }
 
 //--------------------------------------------------------------------+
-// Minimal GPIO init (keep it simple; CubeMX usually generates this anyway)
-// If CubeMX already generated MX_GPIO_Init elsewhere, keep only one definition.
+// GPIO Initialization
 //--------------------------------------------------------------------+
+// Configureert alle GPIO poorten en chip select pin
+//
 static void MX_GPIO_Init(void)
 {
+  // Enable clocks for all GPIO ports
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
+
+  // ===== MCP23S17 Chip Select Pin (PA10) =====
+  // SPI standard: CS low = chip selected, CS high = chip not selected
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_10;                       // PA10
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;              // Output push-pull
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;            // For SPI timing
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);     // CS initially HIGH (inactive)
 }
 
 //--------------------------------------------------------------------+
-// USB Device Initialization
+// SPI1 Initialization for MCP23S17 Communication
 //--------------------------------------------------------------------+
+// Configureert SPI1 master mode voor serial communicatie met MCP23S17
+//
+// Hardware connections:
+//   PA5 = SCK (Serial Clock) → D13
+//   PA6 = MISO (Master In Slave Out) → D12
+//   PA7 = MOSI (Master Out Slave In) → D11
+//   PA10 = CS (Chip Select) → D10
+//
+// SPI Protocol:
+//   - Speed: ~3 MHz (SPI_BAUDRATEPRESCALER_16 @ 48MHz PCLK)
+//   - Mode: SPI Master, Mode 0 (CPOL=0, CPHA=0)
+//   - Data width: 8-bit
+//   - MSB first (Most Significant Bit first)
+//
+static void MX_SPI1_Init(void)
+{
+  // Enable SPI1 peripheral clock
+  __HAL_RCC_SPI1_CLK_ENABLE();
+
+  // ===== Configure GPIO pins for SPI1 =====
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  // SCK: PA5 (Serial Clock)
+  GPIO_InitStruct.Pin = GPIO_PIN_5;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;                  // Alternate function push-pull
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;               // AF5 = SPI1 on this pin
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  // MISO: PA6 (Master In Slave Out)
+  GPIO_InitStruct.Pin = GPIO_PIN_6;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  // MOSI: PA7 (Master Out Slave In)
+  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  // ===== Configure SPI1 Peripheral =====
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;                        // STM32 is master
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;              // Full-duplex (MISO + MOSI)
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;                  // 8-bit data words
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;                // Clock idle = LOW (CPOL=0)
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;                    // PHA=0 (sample on clock edge)
+  hspi1.Init.NSS = SPI_NSS_SOFT;                            // CS handled by GPIO (software)
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;  // Prescaler=16 → ~3MHz @ 48MHz
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;                   // Send MSB (Most Significant Bit) first
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;                   // TI frame format disabled
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;   // CRC disabled
+
+  // Initialize SPI
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
 static void MX_USB_Init(void)
 {
-  // Initialize USB Device peripheral
+  // ===== Initialize USB Device peripheral =====
+  // Configure USB DRD (Dual Role Device) in device mode (MIDI device)
   hpcd_USB_DRD_FS.Instance = USB_DRD_FS;
-  hpcd_USB_DRD_FS.Init.dev_endpoints = 8;
-  hpcd_USB_DRD_FS.Init.speed = PCD_SPEED_FULL;
-  hpcd_USB_DRD_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
+  hpcd_USB_DRD_FS.Init.dev_endpoints = 8;                  // 8 endpoints available
+  hpcd_USB_DRD_FS.Init.speed = PCD_SPEED_FULL;             // Full Speed (12 Mbps)
+  hpcd_USB_DRD_FS.Init.phy_itface = PCD_PHY_EMBEDDED;      // Embedded PHY
   hpcd_USB_DRD_FS.Init.low_power_enable = DISABLE;
   hpcd_USB_DRD_FS.Init.lpm_enable = DISABLE;
   hpcd_USB_DRD_FS.Init.battery_charging_enable = DISABLE;
@@ -285,46 +490,51 @@ static void MX_USB_Init(void)
     Error_Handler();
   }
 
-  // Enable USB interrupt
-  HAL_NVIC_SetPriority(USB_DRD_FS_IRQn, 0, 0);
+  // ===== Enable USB Interrupt =====
+  // USB interrupt voor TinyUSB stack communicatie
+  HAL_NVIC_SetPriority(USB_DRD_FS_IRQn, 0, 0);  // Highest priority
   HAL_NVIC_EnableIRQ(USB_DRD_FS_IRQn);
 }
 
 //--------------------------------------------------------------------+
 // System Clock Configuration
 //--------------------------------------------------------------------+
+// Configureert systemklok op STM32H5 voor USB compatibiliteit
+// USB vereist precise timing voor MIDI communicatie
+//
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Configure the main internal regulator output voltage
-  */
+  // ===== Voltage Scaling =====
+  // VOS3 = 1.8V (low performance, low power)
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
-
   while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSI;
+  // ===== Oscillator Configuration =====
+  // STM32H5: HSI (8MHz) + HSI48 voor USB
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48 | RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV2;
+  RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV2;                 // HSI /2 = 4MHz
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;             // 48MHz clock (USB)
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;           // No PLL needed
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
   }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
-                              |RCC_CLOCKTYPE_PCLK3;
+  // ===== Clock Distribution =====
+  // HCLK = 4MHz (system clock)
+  // PCLK1 = 4MHz (APB1)
+  // PCLK2 = 4MHz (APB2)
+  // PCLK3 = 4MHz (APB3)
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+                              | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2
+                              | RCC_CLOCKTYPE_PCLK3;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;       // No AHB divider
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB3CLKDivider = RCC_HCLK_DIV1;
@@ -338,20 +548,166 @@ void SystemClock_Config(void)
 //--------------------------------------------------------------------+
 // Error Handler
 //--------------------------------------------------------------------+
+// Wordt aangeroepen wanneer een kritical error optreedt
+// Disables interrupts en enters infinite loop
+// Dit voorkomt verder execution van tainted code
+//
 void Error_Handler(void)
 {
   /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
+  __disable_irq();  // Disable all interrupts
+  
   while (1)
   {
-    // Optionally blink an LED or stay in infinite loop
+    // Infinite loop - watchdog (if enabled) will reset the system
+    // Or LED blink pattern could be added here for debugging
   }
 }
 
 //--------------------------------------------------------------------+
-// TinyUSB time API (required by TinyUSB)
+// MCP23S17 SPI Driver Implementation
 //--------------------------------------------------------------------+
+// Low-level SPI functions voor communicatie met MCP23S17
+
+// ===== Chip Select Control =====
+// CS moet LOW zijn voor SPI transactie, HIGH daarna
+static void mcp23s17_cs_low(void)
+{
+  HAL_GPIO_WritePin(MCP_CS_PORT, MCP_CS_PIN, GPIO_PIN_RESET);
+}
+
+static void mcp23s17_cs_high(void)
+{
+  HAL_GPIO_WritePin(MCP_CS_PORT, MCP_CS_PIN, GPIO_PIN_SET);
+}
+
+// ===== Register Write =====
+// Schrijft een 8-bit waarde naar een MCP23S17 register via SPI
+// Protocol: TX opcode (0x40)→ TX register address → TX data value
+static void mcp23s17_write_reg(uint8_t reg, uint8_t value)
+{
+  // Opcode frame:
+  // Bit 7: 0 = write
+  // Bit 6-1: Device address (0x40 = all address bits low)
+  // Bit 0: part of address
+  uint8_t opcode = MCP23S17_ADDR | 0x00;  // Write mode (bit 0 = 0)
+  
+  uint8_t tx_data[3] = {opcode, reg, value};
+  uint8_t rx_data[3] = {0};
+
+  mcp23s17_cs_low();
+  HAL_SPI_TransmitReceive(&hspi1, tx_data, rx_data, 3, HAL_MAX_DELAY);
+  mcp23s17_cs_high();
+
+  HAL_Delay(1);  // 1ms delay for stability
+}
+
+// ===== Register Read =====
+// Leest een 8-bit waarde uit een MCP23S17 register via SPI
+// Protocol: TX opcode (0x41) → TX register address → RX data value
+static uint8_t mcp23s17_read_reg(uint8_t reg)
+{
+  // Opcode frame:
+  // Bit 7: 1 = read
+  // Bit 6-1: Device address (0x40 = all address bits low)
+  // Bit 0: part of address
+  uint8_t opcode = MCP23S17_ADDR | 0x01;  // Read mode (bit 0 = 1)
+  
+  uint8_t tx_data[3] = {opcode, reg, 0x00};  // Third byte is dummy (ignored by MCP)
+  uint8_t rx_data[3] = {0};
+
+  mcp23s17_cs_low();
+  HAL_SPI_TransmitReceive(&hspi1, tx_data, rx_data, 3, HAL_MAX_DELAY);
+  mcp23s17_cs_high();
+
+  HAL_Delay(1);  // 1ms delay for stability
+  
+  return rx_data[2];  // Data returned in third byte of RX buffer
+}
+
+// ===== MCP23S17 Initialization =====
+// Configureert GPIOA als inputs (kolommen with pull-ups)
+// Configureert GPIOB als outputs (rijen voor matrix scanning)
+static void mcp23s17_init(void)
+{
+  // ===== Configure GPIOA (Kolommen) =====
+  // Bits 0-3: Inputs (toets kolommen C1-C4)
+  // With pull-ups enabled (toetsen trekken laag naar GND)
+  mcp23s17_write_reg(IODIRA, 0x0F);  // GPA0-GPA3 = inputs (1=input, 0=output)
+  mcp23s17_write_reg(GPPUA, 0x0F);   // GPA0-GPA3 = pull-ups enabled
+
+  // ===== Configure GPIOB (Rijen) =====
+  // Bits 0-3: Outputs (we drive one row low at a time)
+  // We scan matrix by driving rows low, reading column response
+  mcp23s17_write_reg(IODIRB, 0x00);  // GPB0-GPB3 = outputs (all 0)
+  mcp23s17_write_reg(GPIOB, 0x0F);   // All rows HIGH initially (inactive)
+
+  // ===== Initialize State Arrays =====
+  // 0xFF = all keys released (high due to pull-ups)
+  for (int i = 0; i < 4; i++)
+  {
+    keypad_state[i] = 0xFF;
+    keypad_prev[i] = 0xFF;
+  }
+}
+
+// ===== Matrix Scanning Function =====
+// Scans 4x4 matrix by:
+// 1. Driving one row LOW at a time (output GPB0-3)
+// 2. Reading which columns go LOW (input GPA0-3)
+// 3. If row i and column j both low → key[i][j] is pressed
+//
+// After scan, all rows returned to HIGH (inactive)
+static void keypad_scan(void)
+{
+  // 4x4 Matrix scanning logic:
+  // GPIOA (inputs with pull-ups): Columns C1-C4 = GPA0-3
+  // GPIOB (outputs): Rows R1-R4 = GPB0-3
+  //
+  // For each row:
+  //   - Set GPB0-3 to have only current row LOW (0), others HIGH (1)
+  //   - Wait ~2ms for settling
+  //   - Read GPA0-3 to see which columns went LOW
+  //   - Store in keypad_state[row]
+  
+  for (int row = 0; row < 4; row++)
+  {
+    // Create row pattern: only this row LOW, others HIGH
+    // Voorbeeld voor row=0: GPB = 0b1110 = ~0b0001 & 0x0F
+    uint8_t row_pattern = ~(1 << row) & 0x0F;
+    
+    // Drive only this row LOW
+    mcp23s17_write_reg(GPIOB, row_pattern);
+    
+    // Wait for signal settling (debounce)
+    HAL_Delay(2);
+    
+    // Read column states for this row
+    // Bit = 0: key pressed (column pulled low by switch)
+    // Bit = 1: key not pressed (column held high by resistor)
+    uint8_t cols = mcp23s17_read_reg(GPIOA);
+    
+    // Store for this row
+    keypad_state[row] = cols;
+  }
+  
+  // Return all rows to HIGH (all inactive)
+  // This prevents ghosting on passive matrix
+  mcp23s17_write_reg(GPIOB, 0x0F);
+}
+
+//--------------------------------------------------------------------+
+// TinyUSB Time API
+//--------------------------------------------------------------------+
+// Vereist door TinyUSB stack voor timing- en debouncing-logica
+// Retourneert tijdstip in milliseconden sinds STM32 opstart
+//
+// Gebruikt voor:
+//   - USB device timeouts
+//   - LED blink timing
+//   - Keypad debounce interval
+//
 uint32_t tusb_time_millis_api(void)
 {
-  return HAL_GetTick();
+  return HAL_GetTick();  // Returns milliseconds from HAL system timer
 }
