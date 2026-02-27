@@ -56,14 +56,14 @@ static void MX_SPI_BitBang_Init(void);
 //   GPIOB (bits 0-3): Rijen = outputs (R1-R4)
 //
 // SPI Pins:
-//   PA5  = SCK (D13)
-//   PA6  = MISO (D12)
-//   PA7  = MOSI (D11)
-//   PA10 = CS (D10) - Software controlled
+//   PA5 = SCK  (D13)
+//   PA6 = MISO (D12)  ← SO van MCP23S17
+//   PA7 = MOSI (D11)  ← SI van MCP23S17
+//   PB6 = CS   (D10)  ← op Nucleo-H533RE is D10 = PB6, NIET PA10!
 //
 #define MCP23S17_ADDR   0x40  // Hardwired address (A0, A1, A2 = GND)
-#define MCP_CS_PORT     GPIOA
-#define MCP_CS_PIN      GPIO_PIN_10
+#define MCP_CS_PORT     GPIOB
+#define MCP_CS_PIN      GPIO_PIN_6
 
 // MCP23S17 Register Addresses (Sequential Mode)
 #define MCP_IODIRA    0x00  // I/O Direction Register A (0=output, 1=input)
@@ -516,12 +516,12 @@ static void MX_GPIO_Init(void)
   // ===== MCP23S17 Chip Select Pin (PA10) =====
   // SPI standard: CS low = chip selected, CS high = chip not selected
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-  GPIO_InitStruct.Pin = GPIO_PIN_10;                       // PA10
+  GPIO_InitStruct.Pin = GPIO_PIN_6;                        // PB6 = D10
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;              // Output push-pull
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;            // For SPI timing
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);     // CS initially HIGH (inactive)
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);      // CS initially HIGH (inactive)
 }
 
 //--------------------------------------------------------------------+
