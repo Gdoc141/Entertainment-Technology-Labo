@@ -35,7 +35,7 @@
 #include "main.h"
 #include "tusb.h"
 #include "stm32h5xx_nucleo.h"   // BSP LED helpers (je project compileert stm32h5xx_nucleo.c al)
-#include "stm32h5xx_hal_spi.h"  // SPI peripheral support
+// Note: SPI HAL driver is not included in this project, so we use bit-bang SPI via GPIO
 
 //--------------------------------------------------------------------+
 // HAL / CubeMX prototypes
@@ -43,7 +43,7 @@
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USB_Init(void);
-static void MX_SPI1_Init(void);
+static void MX_SPI_BitBang_Init(void);
 
 //--------------------------------------------------------------------+
 // MCP23S17 SPI Keypad Configuration
@@ -73,7 +73,14 @@ static void MX_SPI1_Init(void);
 #define MCP_REG_GPIOA 0x12  // GPIO Port A
 #define MCP_REG_GPIOB 0x13  // GPIO Port B
 
-SPI_HandleTypeDef hspi1;
+// Bit-bang SPI GPIO pins
+// PA5 = SCK (Clock), PA6 = MISO (Data In), PA7 = MOSI (Data Out)
+#define SPI_SCK_PORT    GPIOA
+#define SPI_SCK_PIN     GPIO_PIN_5
+#define SPI_MISO_PORT   GPIOA
+#define SPI_MISO_PIN    GPIO_PIN_6
+#define SPI_MOSI_PORT   GPIOA
+#define SPI_MOSI_PIN    GPIO_PIN_7
 
 // Matrix state buffers
 // keypad_state: huidige aflezing van matrix (0=ingedrukt, 1=los)
@@ -97,6 +104,9 @@ const uint8_t note_map[4][4] = {
   {74, 76, 77, 79},  // Rij 3: D5 - G5
   {81, 83, 84, 86}   // Rij 4: A5 - D6
 };
+
+// Bit-bang SPI functions
+static uint8_t spi_transfer_byte(uint8_t data);             // Stuur/ontvang 1 byte
 
 // MCP23S17 SPI Driver Functions
 static void mcp23s17_write_reg(uint8_t reg, uint8_t value);  // Schrijf register via SPI
@@ -171,7 +181,7 @@ int main(void)
   HAL_Init();                  // STM32 Hardware Abstraction Layer init
   SystemClock_Config();        // Configure system clock
   MX_GPIO_Init();              // GPIO init (includes CS pin setup)
-  MX_SPI1_Init();              // Configure SPI1 for MCP23S17 communication
+  MX_SPI_BitBang_Init();       // Configure bit-bang SPI GPIO pins for MCP23S17
   MX_USB_Init();               // USB Device peripheral init
 
   // ===== Nucleo Board Equipment =====
@@ -431,48 +441,72 @@ static void MX_GPIO_Init(void)
 //   - Data width: 8-bit
 //   - MSB first (Most Significant Bit first)
 //
-static void MX_SPI1_Init(void)
+//--------------------------------------------------------------------+
+// Bit-bang SPI Initialization
+//--------------------------------------------------------------------+
+// Configureert GPIO pins handmatig als SPI (geen SPI hardware driver nodig)
+// SPI Mode 0: CPOL=0 (clock idle LOW), CPHA=0 (sample on rising edge)
+// MSB first, ~100kHz effectieve snelheid (genoeg voor MCP23S17)
+//
+// Pins:
+//   PA5 = SCK  (output)
+//   PA6 = MISO (input)
+//   PA7 = MOSI (output)
+//
+static void MX_SPI_BitBang_Init(void)
 {
-  // Enable SPI1 peripheral clock
-  __HAL_RCC_SPI1_CLK_ENABLE();
-
-  // ===== Configure GPIO pins for SPI1 =====
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-  // SCK: PA5 (Serial Clock)
-  GPIO_InitStruct.Pin = GPIO_PIN_5;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;                  // Alternate function push-pull
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  // ===== SCK (PA5) + MOSI (PA7) als output =====
+  GPIO_InitStruct.Pin   = SPI_SCK_PIN | SPI_MOSI_PIN;      // PA5 en PA7 samen
+  GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;              // Push-pull output
+  GPIO_InitStruct.Pull  = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;               // AF5 = SPI1 on this pin
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  // MISO: PA6 (Master In Slave Out)
-  GPIO_InitStruct.Pin = GPIO_PIN_6;
+  // ===== MISO (PA6) als input =====
+  GPIO_InitStruct.Pin  = SPI_MISO_PIN;                      // PA6
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;                       // Pull-up voor idle state
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  // MOSI: PA7 (Master Out Slave In)
-  GPIO_InitStruct.Pin = GPIO_PIN_7;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  // ===== Initiële states =====
+  HAL_GPIO_WritePin(SPI_SCK_PORT,  SPI_SCK_PIN,  GPIO_PIN_RESET); // SCK = LOW (idle)
+  HAL_GPIO_WritePin(SPI_MOSI_PORT, SPI_MOSI_PIN, GPIO_PIN_RESET); // MOSI = LOW
+}
 
-  // ===== Configure SPI1 Peripheral =====
-  hspi1.Instance = SPI1;
-  hspi1.Init.Mode = SPI_MODE_MASTER;                        // STM32 is master
-  hspi1.Init.Direction = SPI_DIRECTION_2LINES;              // Full-duplex (MISO + MOSI)
-  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;                  // 8-bit data words
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;                // Clock idle = LOW (CPOL=0)
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;                    // PHA=0 (sample on clock edge)
-  hspi1.Init.NSS = SPI_NSS_SOFT;                            // CS handled by GPIO (software)
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;  // Prescaler=16 → ~3MHz @ 48MHz
-  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;                   // Send MSB (Most Significant Bit) first
-  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;                   // TI frame format disabled
-  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;   // CRC disabled
+//--------------------------------------------------------------------+
+// Bit-bang SPI Byte Transfer
+//--------------------------------------------------------------------+
+// Stuurt 1 byte via MOSI en ontvangt tegelijkertijd 1 byte via MISO
+// Protocol: MSB first, Mode 0 (CPOL=0, CPHA=0)
+//   - Data gezet voor stijgende flank van SCK
+//   - Data gelezen op stijgende flank van SCK
+//
+static uint8_t spi_transfer_byte(uint8_t data)
+{
+  uint8_t received = 0;
 
-  // Initialize SPI
-  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  for (int i = 7; i >= 0; i--)  // MSB first (bit 7 down to bit 0)
   {
-    Error_Handler();
+    // ===== Zet MOSI bit =====
+    if (data & (1u << i))
+      HAL_GPIO_WritePin(SPI_MOSI_PORT, SPI_MOSI_PIN, GPIO_PIN_SET);
+    else
+      HAL_GPIO_WritePin(SPI_MOSI_PORT, SPI_MOSI_PIN, GPIO_PIN_RESET);
+
+    // ===== SCK stijgende flank → MCP23S17 samples MOSI =====
+    HAL_GPIO_WritePin(SPI_SCK_PORT, SPI_SCK_PIN, GPIO_PIN_SET);
+
+    // ===== Lees MISO (MCP23S17 drijft SO bij stijgende flank) =====
+    if (HAL_GPIO_ReadPin(SPI_MISO_PORT, SPI_MISO_PIN) == GPIO_PIN_SET)
+      received |= (1u << i);
+
+    // ===== SCK dalende flank =====
+    HAL_GPIO_WritePin(SPI_SCK_PORT, SPI_SCK_PIN, GPIO_PIN_RESET);
   }
+
+  return received;
 }
 static void MX_USB_Init(void)
 {
@@ -592,12 +626,11 @@ static void mcp23s17_write_reg(uint8_t reg, uint8_t value)
   // Bit 6-1: Device address (0x40 = all address bits low)
   // Bit 0: part of address
   uint8_t opcode = MCP23S17_ADDR | 0x00;  // Write mode (bit 0 = 0)
-  
-  uint8_t tx_data[3] = {opcode, reg, value};
-  uint8_t rx_data[3] = {0};
 
   mcp23s17_cs_low();
-  HAL_SPI_TransmitReceive(&hspi1, tx_data, rx_data, 3, HAL_MAX_DELAY);
+  spi_transfer_byte(opcode);   // opcode
+  spi_transfer_byte(reg);      // register address
+  spi_transfer_byte(value);    // data value
   mcp23s17_cs_high();
 
   HAL_Delay(1);  // 1ms delay for stability
@@ -613,17 +646,16 @@ static uint8_t mcp23s17_read_reg(uint8_t reg)
   // Bit 6-1: Device address (0x40 = all address bits low)
   // Bit 0: part of address
   uint8_t opcode = MCP23S17_ADDR | 0x01;  // Read mode (bit 0 = 1)
-  
-  uint8_t tx_data[3] = {opcode, reg, 0x00};  // Third byte is dummy (ignored by MCP)
-  uint8_t rx_data[3] = {0};
 
   mcp23s17_cs_low();
-  HAL_SPI_TransmitReceive(&hspi1, tx_data, rx_data, 3, HAL_MAX_DELAY);
+  spi_transfer_byte(opcode);          // opcode
+  spi_transfer_byte(reg);             // register address
+  uint8_t result = spi_transfer_byte(0x00); // dummy write, capture MCP response
   mcp23s17_cs_high();
 
   HAL_Delay(1);  // 1ms delay for stability
   
-  return rx_data[2];  // Data returned in third byte of RX buffer
+  return result;  // Return received data byte
 }
 
 // ===== MCP23S17 Initialization =====
