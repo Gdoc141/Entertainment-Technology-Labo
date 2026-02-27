@@ -220,6 +220,16 @@ int main(void)
 void tud_mount_cb(void)
 {
   blink_interval_ms = BLINK_MOUNTED;
+
+  // ===== USB TEST NOTE =====
+  // Stuur automatisch C4 (noot 60) zodra USB verbonden is.
+  // Als je dit ziet in MIDI-OX/MIDI View → USB MIDI werkt correct.
+  // Als je dit NIET ziet → USB enumereert niet → PC herkent device niet.
+  uint8_t test_on[4]  = { 0x09, 0x90, 60, 100 };  // Note On  C4 vel=100
+  uint8_t test_off[4] = { 0x08, 0x80, 60,   0 };  // Note Off C4
+  tud_midi_packet_write(test_on);
+  HAL_Delay(200);   // kort even klinken
+  tud_midi_packet_write(test_off);
 }
 
 // Invoked when device is unmounted (USB host disconnected)
@@ -292,12 +302,6 @@ static uint8_t active_notes[4][4] = {0};  // Track which notes are active (veloc
 
 void keypad_task(void)
 {
-  // Alleen MIDI sturen als USB host aangesloten is
-  if (!tud_mounted())
-  {
-    return;
-  }
-
   // Debouncing: Scan slechts elke 20ms
   static uint32_t scan_ms = 0;
   if (board_millis() - scan_ms < 20)
@@ -307,7 +311,16 @@ void keypad_task(void)
   scan_ms = board_millis();
 
   // Scant de matrix (drive one row low, read columns)
+  // Scanning loopt altijd, ook als USB niet gemount is (state bijhouden)
   keypad_scan();
+
+  // MIDI alleen sturen als USB host aangesloten is
+  if (!tud_mounted())
+  {
+    // State wel bijwerken zodat na mount geen valse edge detection
+    for (int i = 0; i < 4; i++) keypad_prev[i] = keypad_state[i];
+    return;
+  }
 
   // ===== MIDI Configuration =====
   uint8_t cable_num = 0;   // USB MIDI jack 0
@@ -630,8 +643,7 @@ static void mcp23s17_write_reg(uint8_t reg, uint8_t value)
   spi_transfer_byte(reg);      // register address
   spi_transfer_byte(value);    // data value
   mcp23s17_cs_high();
-
-  HAL_Delay(1);  // 1ms delay for stability
+  // No HAL_Delay: bit-bang SPI is already slow enough, delay here blocks USB stack
 }
 
 // ===== Register Read =====
@@ -650,9 +662,8 @@ static uint8_t mcp23s17_read_reg(uint8_t reg)
   spi_transfer_byte(reg);             // register address
   uint8_t result = spi_transfer_byte(0x00); // dummy write, capture MCP response
   mcp23s17_cs_high();
+  // No HAL_Delay: bit-bang SPI is already slow enough, delay here blocks USB stack
 
-  HAL_Delay(1);  // 1ms delay for stability
-  
   return result;  // Return received data byte
 }
 
