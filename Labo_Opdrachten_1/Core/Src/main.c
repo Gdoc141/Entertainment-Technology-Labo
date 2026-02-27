@@ -268,8 +268,8 @@ void midi_task(void)
     tud_midi_packet_read(packet);
   }
 
-  // Automatische C3 test-noot elke 2 seconden
-  // Verwijder dit blok zodra de knoppen werken
+  // Automatische C3 test-noot elke 2 seconden - UITGESCHAKELD
+  /*
   static uint32_t test_ms = 0;
   static bool note_on_sent = false;
   uint32_t now = board_millis();
@@ -287,6 +287,7 @@ void midi_task(void)
     note_on_sent = false;
     test_ms = now;
   }
+  */
 }
 
 //--------------------------------------------------------------------+

@@ -3,7 +3,7 @@
 <title>Static Call Graph - [Opdracht 1\Opdracht 1.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image Opdracht 1\Opdracht 1.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Fri Feb 27 12:37:47 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Fri Feb 27 12:42:49 2026
 <BR><P>
 <H3>Maximum Stack Usage =        408 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -277,8 +277,8 @@ Global Symbols
 <BR><BR>[Stack]<UL><LI>Max Depth = 408 + Unknown Stack Size
 <LI>Call Chain = __rt_entry_main &rArr; main &rArr; HAL_PCD_Init &rArr; HAL_PCD_MspInit &rArr; HAL_RCCEx_PeriphCLKConfig &rArr; RCCEx_PLL2_Config
 </UL>
-<BR>[Calls]<UL><LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
-<LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;exit
+<BR>[Calls]<UL><LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;exit
+<LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
 <P><STRONG><a name="[127]"></a>__rt_entry_postli_1</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, __rtentry2.o(.ARM.Collect$$rtentry$$0000000C))
@@ -649,11 +649,11 @@ Global Symbols
 <P><STRONG><a name="[129]"></a>_memcpy_lastbytes</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, rt_memcpy_v6.o(.text), UNUSED)
 
 <P><STRONG><a name="[b6]"></a>__aeabi_memclr4</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, rt_memclr_w.o(.text))
-<BR><BR>[Called By]<UL><LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
-<LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
-<LI><a href="#[7a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;midid_init
+<BR><BR>[Called By]<UL><LI><a href="#[7a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;midid_init
 <LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;configuration_reset
 <LI><a href="#[f1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_rhport_init
+<LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
+<LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
 <P><STRONG><a name="[aa]"></a>__aeabi_memclr8</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, rt_memclr_w.o(.text))
@@ -683,8 +683,8 @@ Global Symbols
 <P><STRONG><a name="[88]"></a>__user_setup_stackheap</STRONG> (Thumb, 74 bytes, Stack size 8 bytes, sys_stackheap_outer.o(.text))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = __user_setup_stackheap
 </UL>
-<BR>[Calls]<UL><LI><a href="#[95]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__user_initial_stackheap
-<LI><a href="#[94]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__user_perproc_libspace
+<BR>[Calls]<UL><LI><a href="#[94]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__user_perproc_libspace
+<LI><a href="#[95]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__user_initial_stackheap
 </UL>
 <BR>[Called By]<UL><LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__rt_entry_sh
 </UL>
@@ -830,13 +830,13 @@ Global Symbols
 <BR><BR>[Stack]<UL><LI>Max Depth = 296 + Unknown Stack Size
 <LI>Call Chain = HAL_PCD_Init &rArr; HAL_PCD_MspInit &rArr; HAL_RCCEx_PeriphCLKConfig &rArr; RCCEx_PLL2_Config
 </UL>
-<BR>[Calls]<UL><LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_PCD_MspInit
-<LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USB_DevDisconnect
+<BR>[Calls]<UL><LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USB_DevDisconnect
 <LI><a href="#[a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_PCDEx_ActivateLPM
 <LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USB_DevInit
 <LI><a href="#[a6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USB_SetCurrentMode
 <LI><a href="#[a5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USB_CoreInit
 <LI><a href="#[a4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USB_DisableGlobalInt
+<LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_PCD_MspInit
 </UL>
 <BR>[Called By]<UL><LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
@@ -845,10 +845,10 @@ Global Symbols
 <BR><BR>[Stack]<UL><LI>Max Depth = 272 + Unknown Stack Size
 <LI>Call Chain = HAL_PCD_MspInit &rArr; HAL_RCCEx_PeriphCLKConfig &rArr; RCCEx_PLL2_Config
 </UL>
-<BR>[Calls]<UL><LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_PWREx_EnableVddUSB
+<BR>[Calls]<UL><LI><a href="#[aa]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr8
+<LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_PWREx_EnableVddUSB
 <LI><a href="#[ab]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_RCCEx_PeriphCLKConfig
 <LI><a href="#[ac]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Error_Handler
-<LI><a href="#[aa]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr8
 </UL>
 <BR>[Called By]<UL><LI><a href="#[a2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_PCD_Init
 </UL>
@@ -979,11 +979,11 @@ Global Symbols
 <P><STRONG><a name="[b8]"></a>btable_set_rx_bufsize</STRONG> (Thumb, 86 bytes, Stack size 8 bytes, fsdev_common.o(.text.btable_set_rx_bufsize))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = btable_set_rx_bufsize
 </UL>
-<BR>[Called By]<UL><LI><a href="#[b4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_int_handler
-<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_edpt_xfer_fifo
+<BR>[Called By]<UL><LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_edpt_xfer_fifo
 <LI><a href="#[b7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_edpt0_status_complete
 <LI><a href="#[c4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;handle_bus_reset
 <LI><a href="#[bc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_edpt_xfer
+<LI><a href="#[b4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_int_handler
 </UL>
 
 <P><STRONG><a name="[b7]"></a>dcd_edpt0_status_complete</STRONG> (Thumb, 50 bytes, Stack size 0 bytes, dcd_stm32_fsdev.o(.text.dcd_edpt0_status_complete))
@@ -1018,9 +1018,9 @@ Global Symbols
 <P><STRONG><a name="[100]"></a>dcd_edpt_stall</STRONG> (Thumb, 124 bytes, Stack size 8 bytes, dcd_stm32_fsdev.o(.text.dcd_edpt_stall))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = dcd_edpt_stall
 </UL>
-<BR>[Called By]<UL><LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
-<LI><a href="#[ff]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_edpt_stall
+<BR>[Called By]<UL><LI><a href="#[ff]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_edpt_stall
 <LI><a href="#[f4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_control_xfer_cb
+<LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 </UL>
 
 <P><STRONG><a name="[bc]"></a>dcd_edpt_xfer</STRONG> (Thumb, 172 bytes, Stack size 24 bytes, dcd_stm32_fsdev.o(.text.dcd_edpt_xfer))
@@ -1099,11 +1099,12 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_init
 </UL>
 
-<P><STRONG><a name="[8c]"></a>main</STRONG> (Thumb, 2128 bytes, Stack size 112 bytes, main.o(.text.main))
+<P><STRONG><a name="[8c]"></a>main</STRONG> (Thumb, 2050 bytes, Stack size 112 bytes, main.o(.text.main))
 <BR><BR>[Stack]<UL><LI>Max Depth = 408 + Unknown Stack Size
 <LI>Call Chain = main &rArr; HAL_PCD_Init &rArr; HAL_PCD_MspInit &rArr; HAL_RCCEx_PeriphCLKConfig &rArr; RCCEx_PLL2_Config
 </UL>
-<BR>[Calls]<UL><LI><a href="#[d2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_midi_n_packet_read
+<BR>[Calls]<UL><LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr4
+<LI><a href="#[d2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_midi_n_packet_read
 <LI><a href="#[d1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_midi_n_available
 <LI><a href="#[d0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_midi_n_packet_write
 <LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_mounted
@@ -1119,7 +1120,6 @@ Global Symbols
 <LI><a href="#[b2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_RCC_OscConfig
 <LI><a href="#[99]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_Init
 <LI><a href="#[cc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;spi_transfer_byte
-<LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr4
 </UL>
 <BR>[Called By]<UL><LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__rt_entry_main
 </UL>
@@ -1239,9 +1239,9 @@ Global Symbols
 <LI><a href="#[e9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_edpt_xfer
 <LI><a href="#[e7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_edpt_claim
 </UL>
-<BR>[Called By]<UL><LI><a href="#[d0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_midi_n_packet_write
-<LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;midid_xfer_cb
+<BR>[Called By]<UL><LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;midid_xfer_cb
 <LI><a href="#[eb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_edpt_stream_write
+<LI><a href="#[d0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_midi_n_packet_write
 </UL>
 
 <P><STRONG><a name="[d9]"></a>tu_edpt_stream_write_zlp_if_needed</STRONG> (Thumb, 128 bytes, Stack size 16 bytes, tusb.o(.text.tu_edpt_stream_write_zlp_if_needed))
@@ -1277,10 +1277,10 @@ Global Symbols
 </UL>
 <BR>[Calls]<UL><LI><a href="#[ec]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_fifo_peek_n_access_mode
 </UL>
-<BR>[Called By]<UL><LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
-<LI><a href="#[bd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_transmit_packet
+<BR>[Called By]<UL><LI><a href="#[bd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_transmit_packet
 <LI><a href="#[e6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_edpt_stream_read
 <LI><a href="#[d8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_edpt_stream_write_xfer
+<LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 </UL>
 
 <P><STRONG><a name="[c0]"></a>tu_fifo_write_n_access_mode</STRONG> (Thumb, 1146 bytes, Stack size 64 bytes, tusb_fifo.o(.text.tu_fifo_write_n_access_mode))
@@ -1288,10 +1288,10 @@ Global Symbols
 </UL>
 <BR>[Calls]<UL><LI><a href="#[ed]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy
 </UL>
-<BR>[Called By]<UL><LI><a href="#[b4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_int_handler
-<LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;midid_xfer_cb
+<BR>[Called By]<UL><LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;midid_xfer_cb
 <LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_event_handler
 <LI><a href="#[eb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_edpt_stream_write
+<LI><a href="#[b4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_int_handler
 </UL>
 
 <P><STRONG><a name="[c5]"></a>tu_hwfifo_read</STRONG> (Thumb, 172 bytes, Stack size 16 bytes, tusb_fifo.o(.text.tu_hwfifo_read))
@@ -1324,8 +1324,8 @@ Global Symbols
 <BR>[Calls]<UL><LI><a href="#[ed]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy
 <LI><a href="#[e9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_edpt_xfer
 </UL>
-<BR>[Called By]<UL><LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
-<LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;process_get_descriptor
+<BR>[Called By]<UL><LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;process_get_descriptor
+<LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
 </UL>
 
 <P><STRONG><a name="[de]"></a>tud_descriptor_bos_cb</STRONG> (Thumb, 4 bytes, Stack size 0 bytes, usbd.o(.text.tud_descriptor_bos_cb))
@@ -1427,11 +1427,7 @@ Global Symbols
 <BR><BR>[Stack]<UL><LI>Max Depth = 256 + Unknown Stack Size
 <LI>Call Chain = tud_task_ext &rArr; process_get_descriptor &rArr; tud_control_xfer &rArr; usbd_edpt_xfer &rArr; dcd_edpt_xfer &rArr; dcd_transmit_packet &rArr; tu_fifo_read_n_access_mode &rArr; tu_fifo_peek_n_access_mode
 </UL>
-<BR>[Calls]<UL><LI><a href="#[f0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_resume_cb
-<LI><a href="#[f6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_suspend_cb
-<LI><a href="#[f9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_umount_cb
-<LI><a href="#[fd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_mount_cb
-<LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr4
+<BR>[Calls]<UL><LI><a href="#[b6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr4
 <LI><a href="#[100]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_edpt_stall
 <LI><a href="#[ee]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_control_status
 <LI><a href="#[ff]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usbd_edpt_stall
@@ -1450,6 +1446,10 @@ Global Symbols
 <LI><a href="#[e2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;process_set_config
 <LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;configuration_reset
 <LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_fifo_read_n_access_mode
+<LI><a href="#[f0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_resume_cb
+<LI><a href="#[f6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_suspend_cb
+<LI><a href="#[f9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_umount_cb
+<LI><a href="#[fd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_mount_cb
 </UL>
 <BR>[Called By]<UL><LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
@@ -1642,8 +1642,8 @@ Local Symbols
 <LI><a href="#[bb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pma_align_buffer_size
 <LI><a href="#[ba]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_ep_alloc
 </UL>
-<BR>[Called By]<UL><LI><a href="#[b4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_int_handler
-<LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_init
+<BR>[Called By]<UL><LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_init
+<LI><a href="#[b4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_int_handler
 </UL>
 
 <P><STRONG><a name="[ba]"></a>dcd_ep_alloc</STRONG> (Thumb, 966 bytes, Stack size 16 bytes, dcd_stm32_fsdev.o(.text.dcd_ep_alloc))
@@ -1659,10 +1659,10 @@ Local Symbols
 <BR>[Calls]<UL><LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_hwfifo_write
 <LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tu_fifo_read_n_access_mode
 </UL>
-<BR>[Called By]<UL><LI><a href="#[b4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_int_handler
-<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_edpt_xfer_fifo
+<BR>[Called By]<UL><LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_edpt_xfer_fifo
 <LI><a href="#[bc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_edpt_xfer
 <LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_set_address
+<LI><a href="#[b4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_int_handler
 </UL>
 <P>
 <H3>
