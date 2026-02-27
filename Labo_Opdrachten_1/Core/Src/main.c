@@ -265,6 +265,26 @@ void midi_task(void)
     uint8_t packet[4];
     tud_midi_packet_read(packet);
   }
+
+  // Automatische C3 test-noot elke 2 seconden
+  // Verwijder dit blok zodra de knoppen werken
+  static uint32_t test_ms = 0;
+  static bool note_on_sent = false;
+  uint32_t now = board_millis();
+  if (!note_on_sent && (now - test_ms) >= 2000u)
+  {
+    uint8_t on[4] = { 0x09, 0x90, 60, 100 };
+    tud_midi_packet_write(on);
+    note_on_sent = true;
+    test_ms = now;
+  }
+  else if (note_on_sent && (now - test_ms) >= 200u)
+  {
+    uint8_t off[4] = { 0x08, 0x80, 60, 0 };
+    tud_midi_packet_write(off);
+    note_on_sent = false;
+    test_ms = now;
+  }
 }
 
 //--------------------------------------------------------------------+
