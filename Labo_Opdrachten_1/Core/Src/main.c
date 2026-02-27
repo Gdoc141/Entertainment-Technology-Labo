@@ -221,13 +221,39 @@ int main(void)
 // Device Callbacks - USB Connection State
 //--------------------------------------------------------------------+
 
+static void send_diag_note(uint8_t note)
+{
+  uint8_t on[4]  = { 0x09, 0x90, note, 100 };
+  uint8_t off[4] = { 0x08, 0x80, note,   0 };
+  tud_midi_packet_write(on);
+  HAL_Delay(80);
+  tud_midi_packet_write(off);
+  HAL_Delay(80);
+}
+
 // Invoked when device is mounted (USB host detected)
 void tud_mount_cb(void)
 {
   blink_interval_ms = BLINK_MOUNTED;
-  // NOTE: GEEN HAL_Delay hier! Blocking in een USB callback
-  // zorgt dat de host een timeout krijgt en het device losgekoppeld wordt.
-  // Test-noot wordt verstuurd via de 2-seconden timer in midi_task().
+  HAL_Delay(100);  // Wacht USB stack klaar is
+
+  // ===== Test 1: Lees IODIRA terug =====
+  // Na init moet IODIRA = 0x0F zijn
+  // Noot 10 = IODIRA ok (SPI read werkt)
+  // Noot 20 = IODIRA fout (MISO kapot of chip reageert niet)
+  uint8_t iodira = mcp23s17_read_reg(MCP_IODIRA);
+  send_diag_note(iodira == 0x0F ? 10 : 20);
+
+  // ===== Test 2: Schrijf 0x55 naar OLATB, lees terug =====
+  // Als write+read werkt: geeft noot 30
+  // Als write werkt maar read niet: geeft noot 40
+  // Als niks werkt: geeft noot 50
+  mcp23s17_write_reg(0x15, 0x55);  // OLATB = 0x55
+  uint8_t olatb = mcp23s17_read_reg(0x15);
+  mcp23s17_write_reg(0x15, 0x0F);  // OLATB terug naar 0x0F
+  if (olatb == 0x55)      send_diag_note(30);  // Write+Read OK
+  else if (olatb == 0x00) send_diag_note(40);  // Read stuck LOW
+  else                    send_diag_note(50);  // Onverwachte waarde (noot = waarde zelf)
 }
 
 // Invoked when device is unmounted (USB host disconnected)
@@ -382,6 +408,16 @@ void keypad_task(void)
         active_notes[row][col] = 0;  // Mark note as inactive
       }
     }
+  }
+
+  // ===== Debug: stuur CC per rij met raw GPIOA waarde =====
+  // CC channel 1, controller 20-23 = rij 0-3
+  // Waarde = geïnverteerde GPIOA (1=ingedrukt wordt zichtbaar als hoge waarde)
+  for (int row = 0; row < 4; row++)
+  {
+    uint8_t raw_val = (~keypad_state[row]) & 0x0F;  // 0 = los, >0 = ingedrukt
+    uint8_t cc[4] = { 0x0B, 0xB0, (uint8_t)(20 + row), raw_val };
+    tud_midi_packet_write(cc);
   }
 
   // ===== Update state for next cycle =====
@@ -630,6 +666,9 @@ void Error_Handler(void)
 static void mcp23s17_cs_low(void)
 {
   HAL_GPIO_WritePin(MCP_CS_PORT, MCP_CS_PIN, GPIO_PIN_RESET);
+  // Kleine delay: MCP23S17 vereist minimale CS setup tijd (tCSS ~50ns)
+  // Op 4MHz klok is 1 NOP al genoeg, maar voor zekerheid 10x NOP
+  for (volatile int d = 0; d < 10; d++) __NOP();
 }
 
 static void mcp23s17_cs_high(void)
