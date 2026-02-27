@@ -130,8 +130,9 @@ static inline uint32_t board_millis(void)
 
 static inline void board_led_write(bool state)
 {
-  if (state) BSP_LED_On(LED2);
-  else       BSP_LED_Off(LED2);
+  // LED2 (PA5) is NOT used: PA5 is wired to MCP23S17 SCK (D13).
+  // Calling BSP_LED_On/Off would corrupt the SPI clock line.
+  (void)state;
 }
 
 // On the original example these exist, keep them as no-ops for compatibility
@@ -184,9 +185,7 @@ int main(void)
   MX_SPI_BitBang_Init();       // Configure bit-bang SPI GPIO pins for MCP23S17
   MX_USB_Init();               // USB Device peripheral init
 
-  // ===== Nucleo Board Equipment =====
-  BSP_LED_Init(LED2);          // Initialize on-board LED (PA5)
-  BSP_LED_Off(LED2);           // LED off at startup
+  // NOTE: LED2 (PA5) is NOT used because PA5 is wired to MCP23S17 SCK (D13)
 
   // ===== MCP23S17 Keypad Initialization =====
   // Configure GPIOA as inputs (kolommen) met pull-ups
@@ -206,8 +205,7 @@ int main(void)
   // ===== Main Application Loop =====
   while (1)
   {
-    tud_task();              // Process USB device stack requests
-    led_blinking_task();     // Blink LED based on USB connection state
+    tud_task();              // Process USB device stack requests (call as often as possible)
     keypad_task();           // Scan keypad & send MIDI Note On/Off
     midi_task();             // Handle incoming MIDI traffic (if any)
   }
@@ -294,22 +292,22 @@ static uint8_t active_notes[4][4] = {0};  // Track which notes are active (veloc
 
 void keypad_task(void)
 {
-  // Scant de matrix (drive one row low, read columns)
-  keypad_scan();
-
   // Alleen MIDI sturen als USB host aangesloten is
   if (!tud_mounted())
   {
     return;
   }
 
-  // Debouncing: Scan slechts elke 20ms (= stabilisatietijd)
+  // Debouncing: Scan slechts elke 20ms
   static uint32_t scan_ms = 0;
   if (board_millis() - scan_ms < 20)
   {
     return;
   }
   scan_ms = board_millis();
+
+  // Scant de matrix (drive one row low, read columns)
+  keypad_scan();
 
   // ===== MIDI Configuration =====
   uint8_t cable_num = 0;   // USB MIDI jack 0
@@ -712,8 +710,7 @@ static void keypad_scan(void)
     // Drive only this row LOW
     mcp23s17_write_reg(MCP_REG_GPIOB, row_pattern);
     
-    // Wait for signal settling (debounce)
-    HAL_Delay(2);
+    // No HAL_Delay needed: bit-bang SPI is slow enough for the signal to settle
     
     // Read column states for this row
     // Bit = 0: key pressed (column pulled low by switch)
