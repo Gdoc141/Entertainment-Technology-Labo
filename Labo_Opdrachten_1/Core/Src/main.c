@@ -35,6 +35,7 @@
 #include "main.h"
 #include "tusb.h"
 #include "stm32h5xx_nucleo.h"   // BSP LED helpers (je project compileert stm32h5xx_nucleo.c al)
+#include "stm32h5xx_hal_spi.h"  // SPI peripheral support
 
 //--------------------------------------------------------------------+
 // HAL / CubeMX prototypes
@@ -65,12 +66,12 @@ static void MX_SPI1_Init(void);
 #define MCP_CS_PIN      GPIO_PIN_10
 
 // MCP23S17 Register Addresses (Sequential Mode)
-#define IODIRA    0x00  // I/O Direction Register A (0=output, 1=input)
-#define IODIRB    0x01  // I/O Direction Register B
-#define GPPUA     0x0C  // GPIO Pull-Up Resistor A (1=enabled)
-#define GPPUB     0x0D  // GPIO Pull-Up Resistor B
-#define GPIOA     0x12  // GPIO Port A
-#define GPIOB     0x13  // GPIO Port B
+#define MCP_IODIRA    0x00  // I/O Direction Register A (0=output, 1=input)
+#define MCP_IODIRB    0x01  // I/O Direction Register B
+#define MCP_GPPUA     0x0C  // GPIO Pull-Up Resistor A (1=enabled)
+#define MCP_GPPUB     0x0D  // GPIO Pull-Up Resistor B
+#define MCP_REG_GPIOA 0x12  // GPIO Port A
+#define MCP_REG_GPIOB 0x13  // GPIO Port B
 
 SPI_HandleTypeDef hspi1;
 
@@ -633,14 +634,14 @@ static void mcp23s17_init(void)
   // ===== Configure GPIOA (Kolommen) =====
   // Bits 0-3: Inputs (toets kolommen C1-C4)
   // With pull-ups enabled (toetsen trekken laag naar GND)
-  mcp23s17_write_reg(IODIRA, 0x0F);  // GPA0-GPA3 = inputs (1=input, 0=output)
-  mcp23s17_write_reg(GPPUA, 0x0F);   // GPA0-GPA3 = pull-ups enabled
+  mcp23s17_write_reg(MCP_IODIRA, 0x0F);  // GPA0-GPA3 = inputs (1=input, 0=output)
+  mcp23s17_write_reg(MCP_GPPUA, 0x0F);   // GPA0-GPA3 = pull-ups enabled
 
   // ===== Configure GPIOB (Rijen) =====
   // Bits 0-3: Outputs (we drive one row low at a time)
   // We scan matrix by driving rows low, reading column response
-  mcp23s17_write_reg(IODIRB, 0x00);  // GPB0-GPB3 = outputs (all 0)
-  mcp23s17_write_reg(GPIOB, 0x0F);   // All rows HIGH initially (inactive)
+  mcp23s17_write_reg(MCP_IODIRB, 0x00);  // GPB0-GPB3 = outputs (all 0)
+  mcp23s17_write_reg(MCP_REG_GPIOB, 0x0F);   // All rows HIGH initially (inactive)
 
   // ===== Initialize State Arrays =====
   // 0xFF = all keys released (high due to pull-ups)
@@ -677,7 +678,7 @@ static void keypad_scan(void)
     uint8_t row_pattern = ~(1 << row) & 0x0F;
     
     // Drive only this row LOW
-    mcp23s17_write_reg(GPIOB, row_pattern);
+    mcp23s17_write_reg(MCP_REG_GPIOB, row_pattern);
     
     // Wait for signal settling (debounce)
     HAL_Delay(2);
@@ -685,7 +686,7 @@ static void keypad_scan(void)
     // Read column states for this row
     // Bit = 0: key pressed (column pulled low by switch)
     // Bit = 1: key not pressed (column held high by resistor)
-    uint8_t cols = mcp23s17_read_reg(GPIOA);
+    uint8_t cols = mcp23s17_read_reg(MCP_REG_GPIOA);
     
     // Store for this row
     keypad_state[row] = cols;
@@ -693,7 +694,7 @@ static void keypad_scan(void)
   
   // Return all rows to HIGH (all inactive)
   // This prevents ghosting on passive matrix
-  mcp23s17_write_reg(GPIOB, 0x0F);
+  mcp23s17_write_reg(MCP_REG_GPIOB, 0x0F);
 }
 
 //--------------------------------------------------------------------+

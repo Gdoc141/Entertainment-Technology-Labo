@@ -30,7 +30,131 @@ Project File Date:  02/13/2026
 <h2>Output:</h2>
 *** Using Compiler 'V6.24', folder: 'C:\Users\geald\AppData\Local\Keil_v5\ARM\ARMCLANG\Bin'
 Build target 'Opdracht 1'
-"Opdracht 1\Opdracht 1.axf" - 0 Error(s), 0 Warning(s).
+../Core/Src/main.c(72): warning: 'GPIOA' macro redefined [-Wmacro-redefined]
+   72 | #define GPIOA     0x12  // GPIO Port A
+      |         ^
+../Drivers/CMSIS/Device/ST/STM32H5xx/Include\stm32h533xx.h(2798): note: previous definition is here
+ 2798 | #define GPIOA                          GPIOA_NS
+      |         ^
+../Core/Src/main.c(73): warning: 'GPIOB' macro redefined [-Wmacro-redefined]
+   73 | #define GPIOB     0x13  // GPIO Port B
+      |         ^
+../Drivers/CMSIS/Device/ST/STM32H5xx/Include\stm32h533xx.h(2801): note: previous definition is here
+ 2801 | #define GPIOB                          GPIOB_NS
+      |         ^
+../Core/Src/main.c(75): error: unknown type name 'SPI_HandleTypeDef'
+   75 | SPI_HandleTypeDef hspi1;
+      | ^
+../Core/Src/main.c(412): error: incompatible integer to pointer conversion passing 'int' to parameter of type 'GPIO_TypeDef *' [-Wint-conversion]
+  412 |   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+      |                 ^~~~~
+../Core/Src/main.c(72): note: expanded from macro 'GPIOA'
+   72 | #define GPIOA     0x12  // GPIO Port A
+      |                   ^~~~
+../Drivers/STM32H5xx_HAL_Driver/Inc\stm32h5xx_hal_gpio.h(349): note: passing argument to parameter 'GPIOx' here
+  349 | void              HAL_GPIO_Init(GPIO_TypeDef  *GPIOx, const GPIO_InitTypeDef *pGPIO_Init);
+      |                                                ^
+../Core/Src/main.c(413): error: incompatible integer to pointer conversion passing 'int' to parameter of type 'GPIO_TypeDef *' [-Wint-conversion]
+  413 |   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);     // CS initially HIGH (inactive)
+      |                     ^~~~~
+../Core/Src/main.c(72): note: expanded from macro 'GPIOA'
+   72 | #define GPIOA     0x12  // GPIO Port A
+      |                   ^~~~
+../Drivers/STM32H5xx_HAL_Driver/Inc\stm32h5xx_hal_gpio.h(363): note: passing argument to parameter 'GPIOx' here
+  363 | void              HAL_GPIO_WritePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState);
+      |                                                   ^
+../Core/Src/main.c(447): error: incompatible integer to pointer conversion passing 'int' to parameter of type 'GPIO_TypeDef *' [-Wint-conversion]
+  447 |   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+      |                 ^~~~~
+../Core/Src/main.c(72): note: expanded from macro 'GPIOA'
+   72 | #define GPIOA     0x12  // GPIO Port A
+      |                   ^~~~
+../Drivers/STM32H5xx_HAL_Driver/Inc\stm32h5xx_hal_gpio.h(349): note: passing argument to parameter 'GPIOx' here
+  349 | void              HAL_GPIO_Init(GPIO_TypeDef  *GPIOx, const GPIO_InitTypeDef *pGPIO_Init);
+      |                                                ^
+../Core/Src/main.c(451): error: incompatible integer to pointer conversion passing 'int' to parameter of type 'GPIO_TypeDef *' [-Wint-conversion]
+  451 |   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+      |                 ^~~~~
+../Core/Src/main.c(72): note: expanded from macro 'GPIOA'
+   72 | #define GPIOA     0x12  // GPIO Port A
+      |                   ^~~~
+../Drivers/STM32H5xx_HAL_Driver/Inc\stm32h5xx_hal_gpio.h(349): note: passing argument to parameter 'GPIOx' here
+  349 | void              HAL_GPIO_Init(GPIO_TypeDef  *GPIOx, const GPIO_InitTypeDef *pGPIO_Init);
+      |                                                ^
+../Core/Src/main.c(455): error: incompatible integer to pointer conversion passing 'int' to parameter of type 'GPIO_TypeDef *' [-Wint-conversion]
+  455 |   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+      |                 ^~~~~
+../Core/Src/main.c(72): note: expanded from macro 'GPIOA'
+   72 | #define GPIOA     0x12  // GPIO Port A
+      |                   ^~~~
+../Drivers/STM32H5xx_HAL_Driver/Inc\stm32h5xx_hal_gpio.h(349): note: passing argument to parameter 'GPIOx' here
+  349 | void              HAL_GPIO_Init(GPIO_TypeDef  *GPIOx, const GPIO_InitTypeDef *pGPIO_Init);
+      |                                                ^
+../Core/Src/main.c(459): error: use of undeclared identifier 'SPI_MODE_MASTER'
+  459 |   hspi1.Init.Mode = SPI_MODE_MASTER;                        // STM32 is master
+      |                     ^
+../Core/Src/main.c(460): error: use of undeclared identifier 'SPI_DIRECTION_2LINES'
+  460 |   hspi1.Init.Direction = SPI_DIRECTION_2LINES;              // Full-duplex (MISO + MOSI)
+      |                          ^
+../Core/Src/main.c(461): error: use of undeclared identifier 'SPI_DATASIZE_8BIT'
+  461 |   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;                  // 8-bit data words
+      |                         ^
+../Core/Src/main.c(462): error: use of undeclared identifier 'SPI_POLARITY_LOW'
+  462 |   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;                // Clock idle = LOW (CPOL=0)
+      |                            ^
+../Core/Src/main.c(463): error: use of undeclared identifier 'SPI_PHASE_1EDGE'
+  463 |   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;                    // PHA=0 (sample on clock edge)
+      |                         ^
+../Core/Src/main.c(464): error: use of undeclared identifier 'SPI_NSS_SOFT'
+  464 |   hspi1.Init.NSS = SPI_NSS_SOFT;                            // CS handled by GPIO (software)
+      |                    ^
+../Core/Src/main.c(465): error: use of undeclared identifier 'SPI_BAUDRATEPRESCALER_16'
+  465 |   hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;  // Prescaler=16 → ~3MHz @ 48MHz
+      |                                  ^
+../Core/Src/main.c(466): error: use of undeclared identifier 'SPI_FIRSTBIT_MSB'
+  466 |   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;                   // Send MSB (Most Significant Bit) first
+      |                         ^
+../Core/Src/main.c(467): error: use of undeclared identifier 'SPI_TIMODE_DISABLE'
+  467 |   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;                   // TI frame format disabled
+      |                       ^
+../Core/Src/main.c(468): error: use of undeclared identifier 'SPI_CRCCALCULATION_DISABLE'
+  468 |   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;   // CRC disabled
+      |                               ^
+../Core/Src/main.c(471): error: call to undeclared function 'HAL_SPI_Init'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+  471 |   if (HAL_SPI_Init(&hspi1) != HAL_OK)
+      |       ^
+../Core/Src/main.c(471): note: did you mean 'HAL_GPIO_Init'?
+../Drivers/STM32H5xx_HAL_Driver/Inc\stm32h5xx_hal_gpio.h(349): note: 'HAL_GPIO_Init' declared here
+  349 | void              HAL_GPIO_Init(GPIO_TypeDef  *GPIOx, const GPIO_InitTypeDef *pGPIO_Init);
+      |                   ^
+../Core/Src/main.c(576): error: incompatible integer to pointer conversion passing 'int' to parameter of type 'GPIO_TypeDef *' [-Wint-conversion]
+  576 |   HAL_GPIO_WritePin(MCP_CS_PORT, MCP_CS_PIN, GPIO_PIN_RESET);
+      |                     ^~~~~~~~~~~
+../Core/Src/main.c(64): note: expanded from macro 'MCP_CS_PORT'
+   64 | #define MCP_CS_PORT     GPIOA
+      |                         ^~~~~
+../Core/Src/main.c(72): note: expanded from macro 'GPIOA'
+   72 | #define GPIOA     0x12  // GPIO Port A
+      |                   ^~~~
+../Drivers/STM32H5xx_HAL_Driver/Inc\stm32h5xx_hal_gpio.h(363): note: passing argument to parameter 'GPIOx' here
+  363 | void              HAL_GPIO_WritePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState);
+      |                                                   ^
+../Core/Src/main.c(581): error: incompatible integer to pointer conversion passing 'int' to parameter of type 'GPIO_TypeDef *' [-Wint-conversion]
+  581 |   HAL_GPIO_WritePin(MCP_CS_PORT, MCP_CS_PIN, GPIO_PIN_SET);
+      |                     ^~~~~~~~~~~
+../Core/Src/main.c(64): note: expanded from macro 'MCP_CS_PORT'
+   64 | #define MCP_CS_PORT     GPIOA
+      |                         ^~~~~
+../Core/Src/main.c(72): note: expanded from macro 'GPIOA'
+   72 | #define GPIOA     0x12  // GPIO Port A
+      |                   ^~~~
+../Drivers/STM32H5xx_HAL_Driver/Inc\stm32h5xx_hal_gpio.h(363): note: passing argument to parameter 'GPIOx' here
+  363 | void              HAL_GPIO_WritePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState);
+      |                                                   ^
+fatal error: too many errors emitted, stopping now [-ferror-limit=]
+2 warnings and 20 errors generated.
+compiling main.c...
+"Opdracht 1\Opdracht 1.axf" - 19 Error(s), 2 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -53,7 +177,8 @@ Package Vendor: Keil
 
    * Component: ARM::CMSIS:CORE@6.2.0
       Include file:  CMSIS/Core/Include/tz_context.h
-Build Time Elapsed:  00:00:00
+Target not created.
+Build Time Elapsed:  00:00:03
 </pre>
 </body>
 </html>
