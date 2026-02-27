@@ -83,10 +83,15 @@ static void MX_SPI_BitBang_Init(void);
 #define SPI_MOSI_PIN    GPIO_PIN_7
 
 // Matrix state buffers
-// keypad_state: huidige aflezing van matrix (0=ingedrukt, 1=los)
-// keypad_prev: vorige aflezing (voor edge detection)
-uint8_t keypad_state[4] = {0xFF, 0xFF, 0xFF, 0xFF};
-uint8_t keypad_prev[4]  = {0xFF, 0xFF, 0xFF, 0xFF};
+uint8_t keypad_state[4]     = {0x0F, 0x0F, 0x0F, 0x0F};  // Geaccepteerde stabiele state
+uint8_t keypad_prev[4]      = {0x0F, 0x0F, 0x0F, 0x0F};  // Vorige stabiele state
+
+// Debounce: eis 5 identieke scans op rij voor een state-wijziging
+// 5 x 20ms = 100ms stabiliteitsvenster
+// Bewegende draden produceren nooit 100ms lang dezelfde ruis-waarde
+#define DEBOUNCE_COUNT 5
+static uint8_t keypad_candidate[4]    = {0x0F, 0x0F, 0x0F, 0x0F};  // Kandidaat waarde
+static uint8_t keypad_stable_cnt[4]   = {0, 0, 0, 0};              // Teller per rij
 
 // MIDI Note Mapping Table
 // Chromatische schaal: C majeur getraponeerd over 4 octaven
@@ -673,24 +678,24 @@ static uint8_t mcp23s17_read_reg(uint8_t reg)
 }
 
 // ===== MCP23S17 Initialization =====
-// Configureert GPIOA als inputs (kolommen with pull-ups)
-// Configureert GPIOB als outputs (rijen voor matrix scanning)
+// OMGEWISSELD: GPIOA = rijen (outputs), GPIOB = kolommen (inputs + pull-ups)
 static void mcp23s17_init(void)
 {
-  // ===== Configure GPIOA (Kolommen) =====
-  mcp23s17_write_reg(MCP_IODIRA, 0x0F);  // GPA0-GPA3 = inputs
-  mcp23s17_write_reg(MCP_GPPUA, 0x0F);   // GPA0-GPA3 = pull-ups enabled
+  // ===== Configure GPIOA (Rijen = outputs) =====
+  mcp23s17_write_reg(MCP_IODIRA, 0x00);      // GPA0-GPA3 = outputs
+  mcp23s17_write_reg(MCP_REG_GPIOA, 0x0F);  // Alle rijen HIGH (inactief)
 
-  // ===== Configure GPIOB (Rijen) =====
-  mcp23s17_write_reg(MCP_IODIRB, 0x00);  // GPB0-GPB3 = outputs (all 0)
-  mcp23s17_write_reg(MCP_REG_GPIOB, 0x0F);   // All rows HIGH initially (inactive)
+  // ===== Configure GPIOB (Kolommen = inputs + pull-ups) =====
+  mcp23s17_write_reg(MCP_IODIRB, 0x0F);     // GPB0-GPB3 = inputs
+  mcp23s17_write_reg(MCP_GPPUB, 0x0F);      // GPB0-GPB3 = pull-ups enabled
 
   // ===== Initialize State Arrays =====
-  // 0xFF = all keys released (high due to pull-ups)
   for (int i = 0; i < 4; i++)
   {
-    keypad_state[i] = 0xFF;
-    keypad_prev[i] = 0xFF;
+    keypad_state[i]     = 0x0F;
+    keypad_prev[i]      = 0x0F;
+    keypad_candidate[i] = 0x0F;
+    keypad_stable_cnt[i]= 0;
   }
 }
 
@@ -705,25 +710,36 @@ static void keypad_scan(void)
 {
   for (int row = 0; row < 4; row++)
   {
-    // Drijf enkel deze rij laag, andere rijen hoog
+    // Drijf enkel deze rij laag via GPIOA, andere rijen hoog
     uint8_t row_pattern = ~(1 << row) & 0x0F;
-    mcp23s17_write_reg(MCP_REG_GPIOB, row_pattern);
+    mcp23s17_write_reg(MCP_REG_GPIOA, row_pattern);
 
-    // Dubbele lezing: lees GPIOA twee keer en accepteer alleen als beide gelijk zijn.
-    // Dit filtert SPI-glitches veroorzaakt door losse draden of ruis op de lijn.
-    // Mask & 0x0F: bits 4-7 zijn outputs op GPIOA, die bits negeren we.
-    uint8_t read1 = mcp23s17_read_reg(MCP_REG_GPIOA) & 0x0F;
-    uint8_t read2 = mcp23s17_read_reg(MCP_REG_GPIOA) & 0x0F;
+    // Dubbele lezing van GPIOB (kolommen)
+    uint8_t read1 = mcp23s17_read_reg(MCP_REG_GPIOB) & 0x0F;
+    uint8_t read2 = mcp23s17_read_reg(MCP_REG_GPIOB) & 0x0F;
 
-    if (read1 == read2)
+    if (read1 != read2)
     {
-      keypad_state[row] = read1;  // Stabiele waarde: sla op
+      keypad_stable_cnt[row] = 0;
+      continue;
     }
-    // Als read1 != read2: SPI ruis → keypad_state[row] ongewijzigd laten
+
+    if (read1 == keypad_candidate[row])
+    {
+      if (keypad_stable_cnt[row] < DEBOUNCE_COUNT)
+        keypad_stable_cnt[row]++;
+      if (keypad_stable_cnt[row] >= DEBOUNCE_COUNT)
+        keypad_state[row] = read1;
+    }
+    else
+    {
+      keypad_candidate[row]  = read1;
+      keypad_stable_cnt[row] = 1;
+    }
   }
 
-  // Zet alle rijen terug hoog (inactief)
-  mcp23s17_write_reg(MCP_REG_GPIOB, 0x0F);
+  // Zet alle rijen terug hoog (inactief) via GPIOA
+  mcp23s17_write_reg(MCP_REG_GPIOA, 0x0F);
 }
 
 //--------------------------------------------------------------------+
