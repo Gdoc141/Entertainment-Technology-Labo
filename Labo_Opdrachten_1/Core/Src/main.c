@@ -120,6 +120,12 @@ static void keypad_task(void);     // Detecteert indrukken/loslaten, stuurt MIDI
 // USB Device Core handle
 PCD_HandleTypeDef hpcd_USB_DRD_FS;
 
+// ===== SPI Diagnostics =====
+// Wordt ingevuld door mcp23s17_init() na het lezen van IODIRA register.
+// Verwachte waarde: 0x0F (we schreven 0x0F naar IODIRA).
+// Als SPI niet werkt geeft de MISO pull-up 0xFF terug.
+static uint8_t g_spi_diag = 0xFF;  // default: onbekend (SPI niet getest)
+
 //--------------------------------------------------------------------+
 // Minimal replacements for TinyUSB example "board_*" functions
 //--------------------------------------------------------------------+
@@ -268,6 +274,34 @@ void midi_task(void)
   {
     uint8_t packet[4];
     tud_midi_packet_read(packet);
+  }
+
+  // ===== SPI DIAGNOSE: Eenmalige noot bij eerste USB mount =====
+  //
+  // Zodra USB voor het eerst verbindt, sturen we de IODIRA readback
+  // waarde als MIDI noot. Kijk in MIDI View welke noot je ontvangt:
+  //
+  //   Noot 15 (D#0 / Eb0)  = IODIRA = 0x0F  → SPI WERKT ✓
+  //                           Probleem zit in matrix wiring of scan logica
+  //
+  //   Noot 127 (G8)        = IODIRA = 0xFF  → SPI werkt NIET ✗
+  //                           Controleer: SCK=D13(PA5), MOSI=D11(PA7),
+  //                           MISO=D12(PA6), CS=D10, RESET=3V3
+  //
+  //   Andere noot          = Onverwachte waarde, SPI deels kapot
+  //
+  static bool spi_diag_sent = false;
+  if (!spi_diag_sent)
+  {
+    uint8_t diag_note = g_spi_diag & 0x7F;  // MIDI max = 127
+    uint8_t diag_on[4]  = { 0x09, 0x90, diag_note, 127 };
+    uint8_t diag_off[4] = { 0x08, 0x80, diag_note,   0 };
+    tud_midi_packet_write(diag_on);
+    // Note Off komt 200ms later via de timer hieronder
+    // (hergebruik test_ms timer — zet flag direct zodat off snel volgt)
+    spi_diag_sent = true;
+    // Stuur off in zelfde frame
+    tud_midi_packet_write(diag_off);
   }
 
   // ===== DIAGNOSE: Automatische test-noot elke 2 seconden =====
@@ -700,14 +734,16 @@ static uint8_t mcp23s17_read_reg(uint8_t reg)
 static void mcp23s17_init(void)
 {
   // ===== Configure GPIOA (Kolommen) =====
-  // Bits 0-3: Inputs (toets kolommen C1-C4)
-  // With pull-ups enabled (toetsen trekken laag naar GND)
   mcp23s17_write_reg(MCP_IODIRA, 0x0F);  // GPA0-GPA3 = inputs (1=input, 0=output)
   mcp23s17_write_reg(MCP_GPPUA, 0x0F);   // GPA0-GPA3 = pull-ups enabled
 
+  // ===== SPI Diagnostics: Lees IODIRA terug =====
+  // Als SPI correct werkt moet dit 0x0F teruggeven (wat we net geschreven hebben).
+  // Als SPI NIET werkt (verkeerde bedrading / timing):  geeft 0xFF (MISO pull-up).
+  // Resultaat wordt eenmalig via MIDI verstuurd in midi_task() na USB mount.
+  g_spi_diag = mcp23s17_read_reg(MCP_IODIRA);
+
   // ===== Configure GPIOB (Rijen) =====
-  // Bits 0-3: Outputs (we drive one row low at a time)
-  // We scan matrix by driving rows low, reading column response
   mcp23s17_write_reg(MCP_IODIRB, 0x00);  // GPB0-GPB3 = outputs (all 0)
   mcp23s17_write_reg(MCP_REG_GPIOB, 0x0F);   // All rows HIGH initially (inactive)
 
