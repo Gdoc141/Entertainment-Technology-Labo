@@ -120,12 +120,6 @@ static void keypad_task(void);     // Detecteert indrukken/loslaten, stuurt MIDI
 // USB Device Core handle
 PCD_HandleTypeDef hpcd_USB_DRD_FS;
 
-// ===== SPI Diagnostics =====
-// Wordt ingevuld door mcp23s17_init() na het lezen van IODIRA register.
-// Verwachte waarde: 0x0F (we schreven 0x0F naar IODIRA).
-// Als SPI niet werkt geeft de MISO pull-up 0xFF terug.
-static uint8_t g_spi_diag = 0xFF;  // default: onbekend (SPI niet getest)
-
 //--------------------------------------------------------------------+
 // Minimal replacements for TinyUSB example "board_*" functions
 //--------------------------------------------------------------------+
@@ -263,111 +257,13 @@ void tud_resume_cb(void)
 //
 void midi_task(void)
 {
-  // Alleen verwerken als device gemount is
-  if (!tud_mounted())
-  {
-    return;
-  }
+  if (!tud_mounted()) return;
 
-  // ===== Read & Discard Incoming MIDI =====
+  // Lees en verwerp inkomende MIDI packets (voorkomt volle buffer)
   while (tud_midi_available())
   {
     uint8_t packet[4];
     tud_midi_packet_read(packet);
-  }
-
-  // ===== SPI DIAGNOSE: Eenmalige noot bij eerste USB mount =====
-  //
-  // Zodra USB voor het eerst verbindt, sturen we de IODIRA readback
-  // waarde als MIDI noot. Kijk in MIDI View welke noot je ontvangt:
-  //
-  //   Noot 15 (D#0 / Eb0)  = IODIRA = 0x0F  → SPI WERKT ✓
-  //                           Probleem zit in matrix wiring of scan logica
-  //
-  //   Noot 127 (G8)        = IODIRA = 0xFF  → SPI werkt NIET ✗
-  //                           Controleer: SCK=D13(PA5), MOSI=D11(PA7),
-  //                           MISO=D12(PA6), CS=D10, RESET=3V3
-  //
-  //   Andere noot          = Onverwachte waarde, SPI deels kapot
-  //
-  // ===== SPI DIAGNOSE (eenmalig, bij eerste USB mount) =====
-  //
-  // We sturen een ANDERE noot dan de test-noot (C3=60) zodat je hem
-  // duidelijk ziet in MIDI View:
-  //
-  //   Noot 15  (D#0 / Eb-1) = IODIRA las 0x0F terug  → SPI WERKT ✓
-  //                            Probleem zit in matrix bedrading.
-  //                            Controleer GPA0-3=kolommen, GPB0-3=rijen.
-  //
-  //   Noot 127 (G8)         = IODIRA las 0x7F/0xFF terug → SPI FAALT ✗
-  //                            Controleer:
-  //                              - RESET pin → 3.3V via 10kΩ
-  //                              - VDD → 3.3V, GND → GND
-  //                              - A0/A1/A2 → allemaal GND
-  //                              - SCK=D13, MOSI=D11, MISO=D12, CS=D10
-  //
-  //   Andere noot           = Ruwe readback waarde (SPI deels kapot)
-  //
-  static bool spi_diag_sent = false;
-  if (!spi_diag_sent)
-  {
-    // Gebruik vaste noten zodat resultaat onmiskenbaar is
-    uint8_t diag_note;
-    if (g_spi_diag == 0x0F)
-    {
-      diag_note = 15;    // D#0 → SPI OK
-    }
-    else
-    {
-      diag_note = 127;   // G8 → SPI FAALT (readback was 0x%02X)
-    }
-    // Stuur 3x zodat je hem zeker niet mist
-    for (int k = 0; k < 3; k++)
-    {
-      uint8_t diag_on[4]  = { 0x09, 0x90, diag_note, 127 };
-      uint8_t diag_off[4] = { 0x08, 0x80, diag_note,   0 };
-      tud_midi_packet_write(diag_on);
-      tud_midi_packet_write(diag_off);
-    }
-    spi_diag_sent = true;
-  }
-
-  // ===== DIAGNOSE: Automatische test-noot elke 2 seconden =====
-  //
-  // STAP 1 - USB diagnose:
-  //   Als je in MIDI View elke ~2s een C4 (noot 60) ziet verschijnen
-  //   → USB MIDI werkt correct. Probleem zit dan in de keypad/SPI.
-  //
-  // STAP 2 - Als je NIETS ziet:
-  //   → USB enumereert niet.
-  //   Controleer:
-  //     a) Gebruik je CN4 (USB FS poort) en NIET CN5 (ST-Link poort)?
-  //        CN4 = kleine USB connector NAAST de power jumper
-  //        CN5 = grote USB connector bij de ST-Link chip
-  //     b) Device Manager → Sound, video and game controllers
-  //        → moet "TinyUSB MIDI" tonen zonder uitroepteken
-  //
-  static uint32_t test_ms    = 0;
-  static bool     note_on_sent = false;
-
-  uint32_t now = board_millis();
-
-  if (!note_on_sent && (now - test_ms) >= 2000u)
-  {
-    // Stuur Note On C4  (noot 60, velocity 100)
-    uint8_t on[4] = { 0x09, 0x90, 60, 100 };
-    tud_midi_packet_write(on);
-    note_on_sent = true;
-    test_ms = now;
-  }
-  else if (note_on_sent && (now - test_ms) >= 200u)
-  {
-    // 200ms later: Stuur Note Off C4
-    uint8_t off[4] = { 0x08, 0x80, 60, 0 };
-    tud_midi_packet_write(off);
-    note_on_sent = false;
-    // test_ms NIET resetten: volgende On prik 2s na de Off
-    test_ms = now;
   }
 }
 
@@ -411,37 +307,9 @@ void keypad_task(void)
     return;
   }
 
-  // ===== RAW SCAN DEBUG =====
-  // Stuur voor elke rij een MIDI Control Change met de ruwe GPIOA waarde.
-  // Dit laat zien wat de MCP23S17 echt leest, los van de noot-logica.
-  //
-  // In MIDI View zie je Controller berichten:
-  //   CC#0 value = rij 0 kolommen  (0x0F = alle los, 0x0E = kolom 0 ingedrukt)
-  //   CC#1 value = rij 1 kolommen
-  //   CC#2 value = rij 2 kolommen
-  //   CC#3 value = rij 3 kolommen
-  //
-  // Als je NOOIT iets anders dan 0x0F (=15) ziet → MCP leest niet, check bedrading
-  // Als je bij indrukken 0x0E/0x0D/0x0B/0x07 ziet → MCP leest WEL → scan logica klopt
-  //
-  for (int dbg = 0; dbg < 4; dbg++)
-  {
-    // Stuur alleen als waarde veranderd is t.o.v. vorige cyclus
-    if ((keypad_state[dbg] & 0x0F) != (keypad_prev[dbg] & 0x0F))
-    {
-      uint8_t cc[4] = {
-        0x0B,                          // CIN = Control Change
-        0xB0,                          // Control Change op channel 1
-        (uint8_t)dbg,                  // CC nummer = rij index (0-3)
-        (uint8_t)(keypad_state[dbg] & 0x7F)  // Ruwe waarde van GPIOA
-      };
-      tud_midi_packet_write(cc);
-    }
-  }
-
   // ===== MIDI Configuration =====
-  uint8_t cable_num = 0;   // USB MIDI jack 0
-  uint8_t channel = 0;     // MIDI Channel 1 (0-index)
+  uint8_t cable_num = 0;
+  uint8_t channel = 0;
 
   // ===== Matrix state change detection =====
   for (int row = 0; row < 4; row++)
@@ -790,14 +658,8 @@ static uint8_t mcp23s17_read_reg(uint8_t reg)
 static void mcp23s17_init(void)
 {
   // ===== Configure GPIOA (Kolommen) =====
-  mcp23s17_write_reg(MCP_IODIRA, 0x0F);  // GPA0-GPA3 = inputs (1=input, 0=output)
+  mcp23s17_write_reg(MCP_IODIRA, 0x0F);  // GPA0-GPA3 = inputs
   mcp23s17_write_reg(MCP_GPPUA, 0x0F);   // GPA0-GPA3 = pull-ups enabled
-
-  // ===== SPI Diagnostics: Lees IODIRA terug =====
-  // Als SPI correct werkt moet dit 0x0F teruggeven (wat we net geschreven hebben).
-  // Als SPI NIET werkt (verkeerde bedrading / timing):  geeft 0xFF (MISO pull-up).
-  // Resultaat wordt eenmalig via MIDI verstuurd in midi_task() na USB mount.
-  g_spi_diag = mcp23s17_read_reg(MCP_IODIRA);
 
   // ===== Configure GPIOB (Rijen) =====
   mcp23s17_write_reg(MCP_IODIRB, 0x00);  // GPB0-GPB3 = outputs (all 0)
