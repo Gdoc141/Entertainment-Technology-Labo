@@ -290,18 +290,46 @@ void midi_task(void)
   //
   //   Andere noot          = Onverwachte waarde, SPI deels kapot
   //
+  // ===== SPI DIAGNOSE (eenmalig, bij eerste USB mount) =====
+  //
+  // We sturen een ANDERE noot dan de test-noot (C3=60) zodat je hem
+  // duidelijk ziet in MIDI View:
+  //
+  //   Noot 15  (D#0 / Eb-1) = IODIRA las 0x0F terug  → SPI WERKT ✓
+  //                            Probleem zit in matrix bedrading.
+  //                            Controleer GPA0-3=kolommen, GPB0-3=rijen.
+  //
+  //   Noot 127 (G8)         = IODIRA las 0x7F/0xFF terug → SPI FAALT ✗
+  //                            Controleer:
+  //                              - RESET pin → 3.3V via 10kΩ
+  //                              - VDD → 3.3V, GND → GND
+  //                              - A0/A1/A2 → allemaal GND
+  //                              - SCK=D13, MOSI=D11, MISO=D12, CS=D10
+  //
+  //   Andere noot           = Ruwe readback waarde (SPI deels kapot)
+  //
   static bool spi_diag_sent = false;
   if (!spi_diag_sent)
   {
-    uint8_t diag_note = g_spi_diag & 0x7F;  // MIDI max = 127
-    uint8_t diag_on[4]  = { 0x09, 0x90, diag_note, 127 };
-    uint8_t diag_off[4] = { 0x08, 0x80, diag_note,   0 };
-    tud_midi_packet_write(diag_on);
-    // Note Off komt 200ms later via de timer hieronder
-    // (hergebruik test_ms timer — zet flag direct zodat off snel volgt)
+    // Gebruik vaste noten zodat resultaat onmiskenbaar is
+    uint8_t diag_note;
+    if (g_spi_diag == 0x0F)
+    {
+      diag_note = 15;    // D#0 → SPI OK
+    }
+    else
+    {
+      diag_note = 127;   // G8 → SPI FAALT (readback was 0x%02X)
+    }
+    // Stuur 3x zodat je hem zeker niet mist
+    for (int k = 0; k < 3; k++)
+    {
+      uint8_t diag_on[4]  = { 0x09, 0x90, diag_note, 127 };
+      uint8_t diag_off[4] = { 0x08, 0x80, diag_note,   0 };
+      tud_midi_packet_write(diag_on);
+      tud_midi_packet_write(diag_off);
+    }
     spi_diag_sent = true;
-    // Stuur off in zelfde frame
-    tud_midi_packet_write(diag_off);
   }
 
   // ===== DIAGNOSE: Automatische test-noot elke 2 seconden =====
