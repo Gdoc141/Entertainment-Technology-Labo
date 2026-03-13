@@ -41,32 +41,33 @@
  * BELANGRIJKSTE LIJNEN OM TE KENNEN
  *
  * Overzicht hoofdflow:
- * - Lijn 203-235: main() initialiseert GPIO, bit-bang SPI, USB en MCP23S17.
- * - Lijn 228-234: hoofdloop met tud_task(), keypad_task() en midi_task().
+ * - Lijn 216-248: main() initialiseert GPIO, bit-bang SPI, USB en MCP23S17.
+ * - Lijn 245-247: hoofdloop met tud_task(), keypad_task() en midi_task().
  *
  * MCP23S17 <-> STM32 communicatie:
- * - Lijn 505-527: MX_SPI_BitBang_Init() zet PA5/PA6/PA7 als SCK/MISO/MOSI.
- * - Lijn 533-558: spi_transfer_byte() stuurt 1 byte via MOSI en leest tegelijk 1 byte via MISO.
- * - Lijn 671-683: mcp23s17_write_reg() schrijft een register naar de MCP23S17 via SPI.
- * - Lijn 690-704: mcp23s17_read_reg() leest een register van de MCP23S17 via SPI.
- * - Lijn 710-719: mcp23s17_init() configureert GPIOA als input en GPIOB als output.
+ * - Lijn 518-539: MX_SPI_BitBang_Init() zet PA5/PA6/PA7 als SCK/MISO/MOSI.
+ * - Lijn 548-573: spi_transfer_byte() stuurt 1 byte via MOSI en leest tegelijk 1 byte via MISO.
+ * - Lijn 684-696: mcp23s17_write_reg() schrijft een register naar de MCP23S17 via SPI.
+ * - Lijn 703-717: mcp23s17_read_reg() leest een register van de MCP23S17 via SPI.
+ * - Lijn 723-736: mcp23s17_init() configureert GPIOA als input en GPIOB als output.
  *
  * Waar leest de code de binnengekomen SPI-waarde om te weten welke knop ingedrukt is:
- * - Lijn 748: keypad_scan() activeert telkens 1 rij van de matrix.
- * - Lijn 757-758: read1/read2 = mcp23s17_read_reg(MCP_REG_GPIOA) leest de kolommen in.
- * - Lijn 769: keypad_state[row] = read1 bewaart de stabiele kolomwaarde voor die rij.
+ * - Lijn 750-780: keypad_scan() voert de volledige matrixscan uit.
+ * - Lijn 756: mcp23s17_write_reg(MCP_REG_GPIOB, row_pattern) activeert telkens 1 rij van de matrix.
+ * - Lijn 759-760: read1/read2 = mcp23s17_read_reg(MCP_REG_GPIOA) leest de kolommen in.
+ * - Lijn 773: keypad_state[row] = read1 bewaart de stabiele kolomwaarde voor die rij.
  * - Betekenis van die waarde: bit = 0 betekent toets ingedrukt, bit = 1 betekent toets los.
  *   Omdat maar 1 rij tegelijk actief laag wordt gemaakt, weet je zo exact welke toets [row][col] actief is.
  *
  * Vertaling van matrixwaarde naar knop en MIDI-noot:
- * - Lijn 125-129: note_map[row][col] vertaalt rij + kolom naar een MIDI-noot.
- * - Lijn 340: keypad_task() start de interpretatie van keypad_state.
- * - Lijn 367-368: current_bit en prev_bit halen per kolom de bitwaarde uit keypad_state/keypad_prev.
- * - Lijn 372: prev_bit && !current_bit = toets werd net ingedrukt.
- * - Lijn 374: note = note_map[row][col] vertaalt de gedetecteerde knop naar een MIDI-noot.
- * - Lijn 385: tud_midi_packet_write(note_on) verstuurt de Note On naar de pc.
- * - Lijn 391: !prev_bit && current_bit = toets werd losgelaten.
- * - Lijn 403: tud_midi_packet_write(note_off) verstuurt de Note Off.
+ * - Lijn 138-143: note_map[row][col] vertaalt rij + kolom naar een MIDI-noot.
+ * - Lijn 343-424: keypad_task() start de interpretatie van keypad_state.
+ * - Lijn 375-376: current_bit en prev_bit halen per kolom de bitwaarde uit keypad_state/keypad_prev.
+ * - Lijn 380: prev_bit && !current_bit = toets werd net ingedrukt.
+ * - Lijn 382: note = note_map[row][col] vertaalt de gedetecteerde knop naar een MIDI-noot.
+ * - Lijn 393: tud_midi_packet_write(note_on) verstuurt de Note On naar de pc.
+ * - Lijn 399: !prev_bit && current_bit = toets werd losgelaten.
+ * - Lijn 411: tud_midi_packet_write(note_off) verstuurt de Note Off.
  */
 
 //--------------------------------------------------------------------+
