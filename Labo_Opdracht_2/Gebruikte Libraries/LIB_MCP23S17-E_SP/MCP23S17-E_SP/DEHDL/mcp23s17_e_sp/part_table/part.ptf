@@ -1,0 +1,11 @@
+FILE_TYPE = MULTI_PHYS_TABLE;
+
+PART 'MCP23S17_E_SP'
+CLASS = IC
+{========================================================================================}
+:"MANUFACTURER_NAME", "MANUFACTURER_PART_NUMBER"= "PART_NUMBER", "JEDEC_TYPE", "PACK_TYPE", "MOUSER_PART_NUMBER", "MOUSER_PRICE/STOCK", "ARROW_PART_NUMBER", "ARROW_PRICE/STOCK", "DESCRIPTION", "DATASHEET", "HEIGHT";
+{========================================================================================}
+ "Microchip", "MCP23S17-E/SP" (!) = "", "DIP794W56P254L3486H508Q28N", "Dual-In-Line Packages", "579-MCP23S17-E/SP", "https://www.mouser.co.uk/ProductDetail/Microchip-Technology/MCP23S17-E-SP?qs=usxtMOJb1RyzobAZrBjFZA%3D%3D", "MCP23S17-E/SP", "https://www.arrow.com/en/products/mcp23s17-esp/microchip-technology?utm_currency=USD&region=europe", "Microchip MCP23S17-E/SO, 16-channel 16bit I/O Expander 5MHz, Serial-SPI, 28-Pin SOIC", "https://datasheet.datasheetarchive.com/originals/distributors/SFDatasheet-4/sf-00090057.pdf", "5.08 mm"
+END_PART
+
+END.

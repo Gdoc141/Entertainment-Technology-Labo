@@ -1,0 +1,9 @@
+Manufacturer=Microchip
+PartNumber=MCP23S17-E/SP
+PartCategory=Integrated Circuit
+PackageCategory=Dual-In-Line Packages
+PinCount=28
+Version=3.1
+Released=2015-12-31 10:41:12
+Downloaded=2026-03-13 08:16:30
+3D=Y

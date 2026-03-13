@@ -1,0 +1,13 @@
+(unit MM)
+
+(package "MCP23S17-E_SP"
+    (type UNDEF)
+    (uver 2)
+    (cuser "SamacSys")
+    (uuser "SamacSys")
+    (utime 2019-11-13-05:42:17)
+    (mountForm default
+        (footprintRef "DIP794W56P254L3486H508Q28N")
+        (spec "System")
+    )
+)
