@@ -16,16 +16,35 @@
   ******************************************************************************
   */
 /* USER CODE END Header */
+
+/* ===== TinyUSB Configuration (MUST be before includes) ===== */
+#define CFG_TUSB_MCU           OPT_MCU_STM32H5
+#define CFG_TUSB_OS            OPT_OS_NONE
+#define CFG_TUSB_RHPORT0_MODE  (OPT_MODE_DEVICE | OPT_MODE_FULL_SPEED)
+
+#define CFG_TUD_MIDI 1
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include <stdbool.h>
+#include "tusb.h"
+#include "stm32h5xx_nucleo.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+
+/* Forward declaration for board_millis */
+static inline uint32_t board_millis(void);
 
 /* USER CODE END PTD */
 
@@ -79,6 +98,102 @@ uint32_t tusb_time_millis_api(void)
   return HAL_GetTick();
 }
 
+/* ===== LED Blink Configuration ===== */
+enum {
+  BLINK_NOT_MOUNTED = 250,    // No USB host connected
+  BLINK_MOUNTED     = 1000,   // USB host connected
+  BLINK_SUSPENDED   = 2500,   // USB suspended
+};
+
+static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
+static uint32_t last_blink_time = 0;
+
+/* Forward declarations */
+void midi_task(void);
+void led_blinking_task(void);
+
+/* ===== Potentiometer Processing ===== */
+#define HYSTERESIS 2
+#define MIDI_CC_POT1 16
+
+uint8_t last_midi_value = 0;
+
+void process_potentiometer(void)
+{
+  uint8_t new_value = adc_value >> 1;  // Convert 8-bit (0-255) to 7-bit (0-127) for MIDI
+  
+  int16_t diff = (int16_t)new_value - (int16_t)last_midi_value;
+  if (diff < 0) diff = -diff;
+  
+  if (diff >= HYSTERESIS) {
+    if (tud_midi_mounted()) {
+      uint8_t msg[3] = { 0xB0, MIDI_CC_POT1, new_value };
+      tud_midi_stream_write(0, msg, 3);
+    }
+    last_midi_value = new_value;
+  }
+}
+
+/* ===== USB Callbacks ===== */
+void tud_mount_cb(void)
+{
+  blink_interval_ms = BLINK_MOUNTED;
+}
+
+void tud_umount_cb(void)
+{
+  blink_interval_ms = BLINK_NOT_MOUNTED;
+}
+
+void tud_suspend_cb(bool remote_wakeup_en)
+{
+  (void) remote_wakeup_en;
+  blink_interval_ms = BLINK_SUSPENDED;
+}
+
+
+/* ===== MIDI Task ===== */
+void midi_task(void)
+{
+  if (!tud_mounted()) return;
+  while (tud_midi_available()) {
+    uint8_t packet[4];
+    tud_midi_stream_read(packet, 4);
+  }
+}
+
+/* ===== LED Blinking Task ===== */
+void led_blinking_task(void)
+{
+  static uint32_t start_ms = 0;
+  static bool led_state = false;
+
+  if (!start_ms) start_ms = board_millis();
+
+  uint32_t elapsed_ms = board_millis() - start_ms;
+  if (elapsed_ms < blink_interval_ms) return;
+
+  start_ms += blink_interval_ms;
+  led_state = !led_state;
+  
+  if (led_state) {
+    BSP_LED_On(LED_GREEN);
+  } else {
+    BSP_LED_Off(LED_GREEN);
+  }
+}
+
+/* Minimal board helper */
+static inline uint32_t board_millis(void)
+{
+  return HAL_GetTick();
+}
+
+void tud_resume_cb(void)
+{
+  blink_interval_ms = tud_mounted() ? BLINK_MOUNTED : BLINK_NOT_MOUNTED;
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -90,6 +205,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
+  BSP_LED_Off(LED_GREEN);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -142,11 +258,22 @@ int main(void)
     Error_Handler();
   }
 
+  /* ===== USB MIDI Device Stack Initialization ===== */
+  tusb_rhport_init_t dev_init = {
+    .role  = TUSB_ROLE_DEVICE,
+    .speed = TUSB_SPEED_AUTO
+  };
+  tusb_init(0, &dev_init);  // Initialize TinyUSB on port 0
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+    tud_task();              // USB stack servicing (critical - call frequently!)
+    midi_task();             // Handle incoming MIDI data
+    led_blinking_task();     // LED status feedback
+    process_potentiometer(); // Process ADC value and send MIDI CC
+    
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -396,6 +523,10 @@ static void MX_USB_PCD_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USB_Init 2 */
+
+  /* Enable USB Interrupt - CRITICAL for TinyUSB! */
+  HAL_NVIC_SetPriority(USB_DRD_FS_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(USB_DRD_FS_IRQn);
 
   /* USER CODE END USB_Init 2 */
 
