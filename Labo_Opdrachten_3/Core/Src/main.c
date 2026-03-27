@@ -16,18 +16,6 @@
   ******************************************************************************
   */
 /* USER CODE END Header */
-
-/* ===== TinyUSB Configuration (MUST be before includes) ===== */
-#define CFG_TUSB_MCU           OPT_MCU_STM32H5
-#define CFG_TUSB_OS            OPT_OS_NONE
-#define CFG_TUSB_RHPORT0_MODE  (OPT_MODE_DEVICE | OPT_MODE_FULL_SPEED)
-
-#define CFG_TUD_MIDI 1
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
@@ -62,6 +50,7 @@ static inline uint32_t board_millis(void);
 
 COM_InitTypeDef BspCOMInit;
 ADC_HandleTypeDef hadc1;
+ADC_HandleTypeDef hadc2;
 DMA_NodeTypeDef Node_GPDMA1_Channel0;
 DMA_QListTypeDef List_GPDMA1_Channel0;
 DMA_HandleTypeDef handle_GPDMA1_Channel0;
@@ -72,8 +61,9 @@ PCD_HandleTypeDef hpcd_USB_DRD_FS;
 
 /* USER CODE BEGIN PV */
 
-/* ADC potentiometer value - filled by DMA */
-volatile uint8_t adc_value = 0;
+/* ADC potentiometer buffer - filled by DMA for 2 potentiometers */
+#define NUM_POTS 2
+volatile uint8_t adc_buffer[NUM_POTS] = {0};
 
 /* USER CODE END PV */
 
@@ -85,6 +75,7 @@ static void MX_ICACHE_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_USB_PCD_Init(void);
+static void MX_ADC2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -114,23 +105,25 @@ void led_blinking_task(void);
 
 /* ===== Potentiometer Processing ===== */
 #define HYSTERESIS 2
-#define MIDI_CC_POT1 16
+#define MIDI_CC_START 16
 
-uint8_t last_midi_value = 0;
+uint8_t last_midi_value[NUM_POTS] = {0};
 
-void process_potentiometer(void)
+void process_potentiometers(void)
 {
-  uint8_t new_value = adc_value >> 1;  // Convert 8-bit (0-255) to 7-bit (0-127) for MIDI
-  
-  int16_t diff = (int16_t)new_value - (int16_t)last_midi_value;
-  if (diff < 0) diff = -diff;
-  
-  if (diff >= HYSTERESIS) {
-    if (tud_midi_mounted()) {
-      uint8_t msg[3] = { 0xB0, MIDI_CC_POT1, new_value };
-      tud_midi_stream_write(0, msg, 3);
+  for (int i = 0; i < NUM_POTS; i++) {
+    uint8_t new_value = adc_buffer[i] >> 1;  // Convert 8-bit (0-255) to 7-bit (0-127) for MIDI
+    
+    int16_t diff = (int16_t)new_value - (int16_t)last_midi_value[i];
+    if (diff < 0) diff = -diff;
+    
+    if (diff >= HYSTERESIS) {
+      if (tud_midi_mounted()) {
+        uint8_t msg[3] = { 0xB0, (uint8_t)(MIDI_CC_START + i), new_value };
+        tud_midi_stream_write(0, msg, 3);
+      }
+      last_midi_value[i] = new_value;
     }
-    last_midi_value = new_value;
   }
 }
 
@@ -236,8 +229,8 @@ int main(void)
   /* Start Timer 6 (generates TRGO trigger for ADC) */
   HAL_TIM_Base_Start(&htim6);
   
-  /* Start ADC with DMA (adc_value is automatically filled) */
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&adc_value, 1);
+  /* Start ADC with DMA (adc_buffer is automatically filled with 2 potentiometer values) */
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buffer, NUM_POTS);
 
   /* USER CODE END 2 */
 
@@ -263,16 +256,16 @@ int main(void)
     .role  = TUSB_ROLE_DEVICE,
     .speed = TUSB_SPEED_AUTO
   };
-  tusb_init(0, &dev_init);  // Initialize TinyUSB on port 0
+  tusb_init(0, &dev_init);
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    tud_task();              // USB stack servicing (critical - call frequently!)
-    midi_task();             // Handle incoming MIDI data
-    led_blinking_task();     // LED status feedback
-    process_potentiometer(); // Process ADC value and send MIDI CC
+    tud_task();               // USB stack servicing (critical - call frequently!)
+    midi_task();              // Handle incoming MIDI data
+    led_blinking_task();      // LED status feedback
+    process_potentiometers(); // Process ADC buffer and send MIDI CC for all pots
     
     /* USER CODE END WHILE */
 
@@ -363,11 +356,11 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_8B;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc1.Init.LowPowerAutoWait = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.NbrOfConversion = 2;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIG_T6_TRGO;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
@@ -392,9 +385,78 @@ static void MX_ADC1_Init(void)
   {
     Error_Handler();
   }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = ADC_REGULAR_RANK_2;
+  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
+
+}
+
+/**
+  * @brief ADC2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC2_Init(void)
+{
+
+  /* USER CODE BEGIN ADC2_Init 0 */
+
+  /* USER CODE END ADC2_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC2_Init 1 */
+
+  /* USER CODE END ADC2_Init 1 */
+
+  /** Common config
+  */
+  hadc2.Instance = ADC2;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV4;
+  hadc2.Init.Resolution = ADC_RESOLUTION_8B;
+  hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc2.Init.LowPowerAutoWait = DISABLE;
+  hadc2.Init.ContinuousConvMode = DISABLE;
+  hadc2.Init.NbrOfConversion = 1;
+  hadc2.Init.DiscontinuousConvMode = DISABLE;
+  hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc2.Init.DMAContinuousRequests = DISABLE;
+  hadc2.Init.SamplingMode = ADC_SAMPLING_MODE_NORMAL;
+  hadc2.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+  hadc2.Init.OversamplingMode = DISABLE;
+  if (HAL_ADC_Init(&hadc2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
+  sConfig.SingleDiff = ADC_SINGLE_ENDED;
+  sConfig.OffsetNumber = ADC_OFFSET_NONE;
+  sConfig.Offset = 0;
+  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC2_Init 2 */
+
+  /* USER CODE END ADC2_Init 2 */
 
 }
 

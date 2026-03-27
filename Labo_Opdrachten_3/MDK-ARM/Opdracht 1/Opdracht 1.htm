@@ -3,9 +3,9 @@
 <title>Static Call Graph - [Opdracht 1\Opdracht 1.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image Opdracht 1\Opdracht 1.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Fri Mar 27 10:09:08 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Fri Mar 27 10:44:29 2026
 <BR><P>
-<H3>Maximum Stack Usage =        500 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
+<H3>Maximum Stack Usage =        492 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
 __rt_entry_main &rArr; main &rArr; HAL_ADC_Init &rArr; HAL_ADC_MspInit &rArr; HAL_DMAEx_List_InsertNode &rArr; DMA_List_FindNode
 <P>
@@ -278,7 +278,7 @@ Global Symbols
 <P><STRONG><a name="[15e]"></a>__rt_entry_postsh_1</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, __rtentry2.o(.ARM.Collect$$rtentry$$00000009))
 
 <P><STRONG><a name="[8f]"></a>__rt_entry_main</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, __rtentry2.o(.ARM.Collect$$rtentry$$0000000D))
-<BR><BR>[Stack]<UL><LI>Max Depth = 500 + Unknown Stack Size
+<BR><BR>[Stack]<UL><LI>Max Depth = 492 + Unknown Stack Size
 <LI>Call Chain = __rt_entry_main &rArr; main &rArr; HAL_ADC_Init &rArr; HAL_ADC_MspInit &rArr; HAL_DMAEx_List_InsertNode &rArr; DMA_List_FindNode
 </UL>
 <BR>[Calls]<UL><LI><a href="#[90]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
@@ -870,7 +870,7 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[b2]"></a>HAL_ADC_Init</STRONG> (Thumb, 506 bytes, Stack size 24 bytes, stm32h5xx_hal_adc.o(.text.HAL_ADC_Init))
-<BR><BR>[Stack]<UL><LI>Max Depth = 460 + Unknown Stack Size
+<BR><BR>[Stack]<UL><LI>Max Depth = 452 + Unknown Stack Size
 <LI>Call Chain = HAL_ADC_Init &rArr; HAL_ADC_MspInit &rArr; HAL_DMAEx_List_InsertNode &rArr; DMA_List_FindNode
 </UL>
 <BR>[Calls]<UL><LI><a href="#[b3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_ADC_MspInit
@@ -878,8 +878,8 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[90]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[b3]"></a>HAL_ADC_MspInit</STRONG> (Thumb, 336 bytes, Stack size 360 bytes, stm32h5xx_hal_msp.o(.text.HAL_ADC_MspInit))
-<BR><BR>[Stack]<UL><LI>Max Depth = 436 + Unknown Stack Size
+<P><STRONG><a name="[b3]"></a>HAL_ADC_MspInit</STRONG> (Thumb, 484 bytes, Stack size 352 bytes, stm32h5xx_hal_msp.o(.text.HAL_ADC_MspInit))
+<BR><BR>[Stack]<UL><LI>Max Depth = 428 + Unknown Stack Size
 <LI>Call Chain = HAL_ADC_MspInit &rArr; HAL_DMAEx_List_InsertNode &rArr; DMA_List_FindNode
 </UL>
 <BR>[Calls]<UL><LI><a href="#[bc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_DMA_ConfigChannelAttributes
@@ -899,9 +899,9 @@ Global Symbols
 <P><STRONG><a name="[bd]"></a>HAL_ADC_Start_DMA</STRONG> (Thumb, 348 bytes, Stack size 136 bytes, stm32h5xx_hal_adc.o(.text.HAL_ADC_Start_DMA))
 <BR><BR>[Stack]<UL><LI>Max Depth = 160<LI>Call Chain = HAL_ADC_Start_DMA &rArr; ADC_Enable
 </UL>
-<BR>[Calls]<UL><LI><a href="#[c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_DMAEx_List_Start_IT
+<BR>[Calls]<UL><LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_DMAEx_List_GetNodeConfig
+<LI><a href="#[c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_DMAEx_List_Start_IT
 <LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_DMA_Start_IT
-<LI><a href="#[be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_DMAEx_List_GetNodeConfig
 <LI><a href="#[a0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ADC_Enable
 </UL>
 <BR>[Called By]<UL><LI><a href="#[90]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
@@ -1000,12 +1000,12 @@ Global Symbols
 <P><STRONG><a name="[a1]"></a>HAL_GetTick</STRONG> (Thumb, 12 bytes, Stack size 0 bytes, stm32h5xx_hal.o(.text.HAL_GetTick))
 <BR><BR>[Called By]<UL><LI><a href="#[dc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;RCCEx_PLL2_Config
 <LI><a href="#[db]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;RCCEx_PLL3_Config
-<LI><a href="#[a0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ADC_Enable
 <LI><a href="#[ba]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_DMAEx_List_Init
 <LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_RCCEx_PeriphCLKConfig
 <LI><a href="#[dd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_RCC_ClockConfig
 <LI><a href="#[de]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_RCC_OscConfig
 <LI><a href="#[90]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
+<LI><a href="#[a0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ADC_Enable
 <LI><a href="#[ea]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_WaitOnFlagUntilTimeout
 <LI><a href="#[e6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_CheckIdleState
 </UL>
@@ -1021,10 +1021,10 @@ Global Symbols
 <P><STRONG><a name="[c2]"></a>HAL_Init</STRONG> (Thumb, 76 bytes, Stack size 8 bytes, stm32h5xx_hal.o(.text.HAL_Init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 32<LI>Call Chain = HAL_Init &rArr; HAL_InitTick &rArr; HAL_NVIC_SetPriority
 </UL>
-<BR>[Calls]<UL><LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_SYSTICK_CLKSourceConfig
-<LI><a href="#[c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_NVIC_SetPriorityGrouping
-<LI><a href="#[c4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_RCC_GetSysClockFreq
+<BR>[Calls]<UL><LI><a href="#[c4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_RCC_GetSysClockFreq
 <LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_InitTick
+<LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_SYSTICK_CLKSourceConfig
+<LI><a href="#[c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_NVIC_SetPriorityGrouping
 <LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_MspInit
 </UL>
 <BR>[Called By]<UL><LI><a href="#[90]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
@@ -1506,8 +1506,8 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[f9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dcd_init
 </UL>
 
-<P><STRONG><a name="[90]"></a>main</STRONG> (Thumb, 688 bytes, Stack size 40 bytes, main.o(.text.main))
-<BR><BR>[Stack]<UL><LI>Max Depth = 500 + Unknown Stack Size
+<P><STRONG><a name="[90]"></a>main</STRONG> (Thumb, 778 bytes, Stack size 40 bytes, main.o(.text.main))
+<BR><BR>[Stack]<UL><LI>Max Depth = 492 + Unknown Stack Size
 <LI>Call Chain = main &rArr; HAL_ADC_Init &rArr; HAL_ADC_MspInit &rArr; HAL_DMAEx_List_InsertNode &rArr; DMA_List_FindNode
 </UL>
 <BR>[Calls]<UL><LI><a href="#[105]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tud_task_ext
@@ -2006,12 +2006,6 @@ Local Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> stm32h5xx_nucleo.o(.text.BSP_PB_Init)
 </UL>
-<P><STRONG><a name="[c1]"></a>DMA_List_FindNode</STRONG> (Thumb, 466 bytes, Stack size 28 bytes, stm32h5xx_hal_dma_ex.o(.text.DMA_List_FindNode))
-<BR><BR>[Stack]<UL><LI>Max Depth = 28<LI>Call Chain = DMA_List_FindNode
-</UL>
-<BR>[Called By]<UL><LI><a href="#[b8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_DMAEx_List_InsertNode
-</UL>
-
 <P><STRONG><a name="[db]"></a>RCCEx_PLL3_Config</STRONG> (Thumb, 234 bytes, Stack size 16 bytes, stm32h5xx_hal_rcc_ex.o(.text.RCCEx_PLL3_Config))
 <BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = RCCEx_PLL3_Config
 </UL>
@@ -2026,6 +2020,12 @@ Local Symbols
 <BR>[Calls]<UL><LI><a href="#[a1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
 </UL>
 <BR>[Called By]<UL><LI><a href="#[b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_RCCEx_PeriphCLKConfig
+</UL>
+
+<P><STRONG><a name="[c1]"></a>DMA_List_FindNode</STRONG> (Thumb, 466 bytes, Stack size 28 bytes, stm32h5xx_hal_dma_ex.o(.text.DMA_List_FindNode))
+<BR><BR>[Stack]<UL><LI>Max Depth = 28<LI>Call Chain = DMA_List_FindNode
+</UL>
+<BR>[Called By]<UL><LI><a href="#[b8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_DMAEx_List_InsertNode
 </UL>
 
 <P><STRONG><a name="[ed]"></a>configuration_reset</STRONG> (Thumb, 152 bytes, Stack size 24 bytes, usbd.o(.text.configuration_reset))
