@@ -53,6 +53,9 @@ PCD_HandleTypeDef hpcd_USB_DRD_FS;
 
 /* USER CODE BEGIN PV */
 
+/* ADC potentiometer value - filled by DMA */
+volatile uint8_t adc_value = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -107,6 +110,12 @@ int main(void)
   MX_TIM6_Init();
   MX_USB_PCD_Init();
   /* USER CODE BEGIN 2 */
+
+  /* Start Timer 6 (generates TRGO trigger for ADC) */
+  HAL_TIM_Base_Start(&htim6);
+  
+  /* Start ADC with DMA (adc_value is automatically filled) */
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&adc_value, 1);
 
   /* USER CODE END 2 */
 

@@ -15,10 +15,15 @@ opdracht\ 1/main.o: ..\Core\Src\main.c ..\Core\Inc\main.h \
   ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_dma.h \
   ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_dma_ex.h \
   ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_cortex.h \
+  ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_adc.h \
+  ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_ll_adc.h \
+  ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_adc_ex.h \
   ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_flash.h \
   ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_flash_ex.h \
   ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_pwr.h \
   ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_pwr_ex.h \
+  ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_tim.h \
+  ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_tim_ex.h \
   ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_uart.h \
   ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_uart_ex.h \
   ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_pcd.h \
@@ -27,20 +32,4 @@ opdracht\ 1/main.o: ..\Core\Src\main.c ..\Core\Inc\main.h \
   ..\Drivers\STM32H5xx_HAL_Driver\Inc\stm32h5xx_hal_exti.h \
   ..\Drivers\BSP\STM32H5xx_Nucleo\stm32h5xx_nucleo.h \
   ..\Core\Inc\stm32h5xx_nucleo_conf.h \
-  ..\Drivers\BSP\STM32H5xx_Nucleo\stm32h5xx_nucleo_errno.h \
-  ..\Middlewares\Third_Party\tinyusb\src\tusb.h \
-  ..\Middlewares\Third_Party\tinyusb\src\common\tusb_common.h \
-  ..\Middlewares\Third_Party\tinyusb\src\tusb_option.h \
-  ..\Middlewares\Third_Party\tinyusb\src\common\tusb_compiler.h \
-  ..\Core\Inc\tusb_config.h \
-  ..\Middlewares\Third_Party\tinyusb\src\common\tusb_mcu.h \
-  ..\Middlewares\Third_Party\tinyusb\src\common\tusb_verify.h \
-  ..\Middlewares\Third_Party\tinyusb\src\common\tusb_types.h \
-  ..\Middlewares\Third_Party\tinyusb\src\common\tusb_debug.h \
-  ..\Middlewares\Third_Party\tinyusb\src\osal\osal.h \
-  ..\Middlewares\Third_Party\tinyusb\src\osal\osal_none.h \
-  ..\Middlewares\Third_Party\tinyusb\src\common\tusb_fifo.h \
-  ..\Middlewares\Third_Party\tinyusb\src\device\usbd.h \
-  ..\Middlewares\Third_Party\tinyusb\src\class\midi\midi_device.h \
-  ..\Middlewares\Third_Party\tinyusb\src\class\audio\audio.h \
-  ..\Middlewares\Third_Party\tinyusb\src\class\midi\midi.h
+  ..\Drivers\BSP\STM32H5xx_Nucleo\stm32h5xx_nucleo_errno.h
