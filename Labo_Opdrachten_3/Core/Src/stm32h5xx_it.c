@@ -56,7 +56,9 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-
+extern DMA_NodeTypeDef Node_GPDMA1_Channel0;
+extern DMA_QListTypeDef List_GPDMA1_Channel0;
+extern DMA_HandleTypeDef handle_GPDMA1_Channel0;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -214,17 +216,17 @@ void EXTI13_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles USB DRD FS global interrupt.
+  * @brief This function handles GPDMA1 Channel 0 global interrupt.
   */
-void USB_DRD_FS_IRQHandler(void)
+void GPDMA1_Channel0_IRQHandler(void)
 {
-  /* USER CODE BEGIN USB_DRD_FS_IRQn 0 */
+  /* USER CODE BEGIN GPDMA1_Channel0_IRQn 0 */
 
-  /* USER CODE END USB_DRD_FS_IRQn 0 */
-  dcd_int_handler(0);
-  /* USER CODE BEGIN USB_DRD_FS_IRQn 1 */
+  /* USER CODE END GPDMA1_Channel0_IRQn 0 */
+  HAL_DMA_IRQHandler(&handle_GPDMA1_Channel0);
+  /* USER CODE BEGIN GPDMA1_Channel0_IRQn 1 */
 
-  /* USER CODE END USB_DRD_FS_IRQn 1 */
+  /* USER CODE END GPDMA1_Channel0_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
