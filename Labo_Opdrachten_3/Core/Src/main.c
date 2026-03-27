@@ -73,6 +73,12 @@ static void MX_USB_PCD_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+/* TinyUSB Time API callback - required by TinyUSB stack */
+uint32_t tusb_time_millis_api(void)
+{
+  return HAL_GetTick();
+}
+
 /* USER CODE END 0 */
 
 /**
