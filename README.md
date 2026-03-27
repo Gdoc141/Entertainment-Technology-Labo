@@ -153,3 +153,62 @@ while(1) {
 - **Scan timing**: 2ms delay per rij voor stabiele readings
 - **Debouncing**: Vereist dat toets state 20ms stabiel is (scan interval)
 - **Stroomverbruik**: MCP23S17 operates op 3V3 (from STM32 regulator)
+
+---
+
+## Opdracht 3: Huidige Status (Matrix + Meerdere Potentiometers)
+
+### Doel van de huidige firmware
+- USB MIDI via TinyUSB
+- 4x4 matrix via MCP23S17 (SPI bit-bang)
+- 2 potentiometers via ADC + DMA + TIM6 trigger
+
+### Wat momenteel in de code zit
+- Matrix scanning en MIDI Note On/Off zijn terug geïntegreerd.
+- Potentiometerverwerking draait parallel met matrixverwerking.
+- TinyUSB interrupt en USB init staan actief.
+- LED2 wordt niet gebruikt voor blinkfeedback omdat PA5 gedeeld wordt met matrix-SCK.
+
+### Pinout overzicht voor deze gecombineerde setup
+
+#### Matrix / MCP23S17 (SPI bit-bang)
+- PA5 -> SCK
+- PA6 <- MISO (SO van MCP23S17)
+- PA7 -> MOSI (SI van MCP23S17)
+- PA10 -> CS
+
+#### Potentiometers
+- Pot 1 wiper -> PA0 (ADC1_IN0)
+- Pot 2 wiper -> PA1 (ADC1_IN1)
+- Buitenste pinnen van beide potmeters -> 3V3 en GND
+
+### MIDI gedrag
+- Matrix toetsen sturen MIDI notes volgens note map (Note On/Off).
+- Potmeters sturen Control Change:
+  - Pot 1 -> CC16
+  - Pot 2 -> CC17
+
+### Belangrijke CubeMX aandachtspunten
+- ADC1 scan mode aan, aantal conversies = 2.
+- Rank 1 = Channel 0, Rank 2 = Channel 1.
+- DMA destination increment moet aan staan.
+- USB moet als Device geconfigureerd zijn.
+- Let op pinconflicten: PA5/PA6/PA7/PA10 reserveren voor matrix-SPI.
+
+### Testchecklist (thuis op eigen bord)
+- Controleer eerst USB enumeratie in Device Manager en MIDI software.
+- Test matrix:
+  - Druk meerdere toetsen
+  - Controleer Note On bij indrukken, Note Off bij loslaten
+- Test potmeters:
+  - Draai Pot 1 en check CC16
+  - Draai Pot 2 en check CC17
+- Controleer of matrix en potmeters tegelijk stabiel blijven werken.
+
+### Troubleshooting kort
+- Alleen potmeters werken, matrix niet:
+  - Meestal SPI/pin issue (PA5/PA6/PA7/PA10) of MCP23S17 voeding/GND.
+- USB device niet zichtbaar:
+  - Controleer USB interrupt handler, TinyUSB include paths en middleware paden.
+- Na CubeMX regenerate werkt iets niet meer:
+  - Controleer of custom code nog in USER CODE blokken staat.

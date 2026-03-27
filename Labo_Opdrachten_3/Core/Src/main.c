@@ -89,6 +89,50 @@ uint32_t tusb_time_millis_api(void)
   return HAL_GetTick();
 }
 
+// MCP23S17 SPI keypad mapping
+#define MCP23S17_ADDR   0x40
+#define MCP_CS_PORT     GPIOA
+#define MCP_CS_PIN      GPIO_PIN_10
+
+#define MCP_IODIRA      0x00
+#define MCP_IODIRB      0x01
+#define MCP_GPPUA       0x0C
+#define MCP_REG_GPIOA   0x12
+#define MCP_REG_GPIOB   0x13
+
+#define SPI_SCK_PORT    GPIOA
+#define SPI_SCK_PIN     GPIO_PIN_5
+#define SPI_MISO_PORT   GPIOA
+#define SPI_MISO_PIN    GPIO_PIN_6
+#define SPI_MOSI_PORT   GPIOA
+#define SPI_MOSI_PIN    GPIO_PIN_7
+
+#define DEBOUNCE_COUNT  5
+
+static uint8_t keypad_state[4]      = {0x0F, 0x0F, 0x0F, 0x0F};
+static uint8_t keypad_prev[4]       = {0x0F, 0x0F, 0x0F, 0x0F};
+static uint8_t keypad_candidate[4]  = {0x0F, 0x0F, 0x0F, 0x0F};
+static uint8_t keypad_stable_cnt[4] = {0, 0, 0, 0};
+static uint8_t active_notes[4][4]   = {0};
+static uint8_t raw_prev[4]          = {0xFF, 0xFF, 0xFF, 0xFF};
+
+static const uint8_t note_map[4][4] = {
+  {60, 62, 64, 65},
+  {67, 69, 71, 72},
+  {74, 76, 77, 79},
+  {81, 83, 84, 86}
+};
+
+static void MX_SPI_BitBang_Init(void);
+static uint8_t spi_transfer_byte(uint8_t data);
+static void mcp23s17_cs_low(void);
+static void mcp23s17_cs_high(void);
+static void mcp23s17_write_reg(uint8_t reg, uint8_t value);
+static uint8_t mcp23s17_read_reg(uint8_t reg);
+static void mcp23s17_init(void);
+static void keypad_scan(void);
+static void keypad_task(void);
+
 /* ===== LED Blink Configuration ===== */
 enum {
   BLINK_NOT_MOUNTED = 250,    // No USB host connected
@@ -158,22 +202,8 @@ void midi_task(void)
 /* ===== LED Blinking Task ===== */
 void led_blinking_task(void)
 {
-  static uint32_t start_ms = 0;
-  static bool led_state = false;
-
-  if (!start_ms) start_ms = board_millis();
-
-  uint32_t elapsed_ms = board_millis() - start_ms;
-  if (elapsed_ms < blink_interval_ms) return;
-
-  start_ms += blink_interval_ms;
-  led_state = !led_state;
-  
-  if (led_state) {
-    BSP_LED_On(LED_GREEN);
-  } else {
-    BSP_LED_Off(LED_GREEN);
-  }
+  // PA5 is used as SPI SCK for the matrix expander, so LED2 cannot be toggled.
+  (void)blink_interval_ms;
 }
 
 /* Minimal board helper */
@@ -187,6 +217,199 @@ void tud_resume_cb(void)
   blink_interval_ms = tud_mounted() ? BLINK_MOUNTED : BLINK_NOT_MOUNTED;
 }
 
+static void keypad_task(void)
+{
+  static uint32_t scan_ms = 0;
+  if (board_millis() - scan_ms < 20)
+  {
+    return;
+  }
+  scan_ms = board_millis();
+
+  keypad_scan();
+
+  if (!tud_mounted())
+  {
+    for (int i = 0; i < 4; i++) keypad_prev[i] = keypad_state[i];
+    return;
+  }
+
+  // Debug: send per-row raw matrix nibble on CC20..CC23 when it changes.
+  // This directly confirms MCP23S17 SPI reads are alive.
+  for (int row = 0; row < 4; row++)
+  {
+    uint8_t raw = (uint8_t)((~keypad_state[row]) & 0x0F);
+    if (raw != raw_prev[row])
+    {
+      uint8_t cc_msg[3] = {0xB0, (uint8_t)(20 + row), raw};
+      tud_midi_stream_write(0, cc_msg, 3);
+      raw_prev[row] = raw;
+    }
+  }
+
+  uint8_t cable_num = 0;
+  uint8_t channel = 0;
+
+  for (int row = 0; row < 4; row++)
+  {
+    for (int col = 0; col < 4; col++)
+    {
+      uint8_t current_bit = (keypad_state[row] >> col) & 1u;
+      uint8_t prev_bit = (keypad_prev[row] >> col) & 1u;
+
+      if (prev_bit && !current_bit && !active_notes[row][col])
+      {
+        uint8_t note = note_map[row][col];
+        uint8_t note_on[4] = {
+          (uint8_t)((cable_num << 4) | 0x09),
+          (uint8_t)(0x90 | channel),
+          note,
+          127
+        };
+        tud_midi_packet_write(note_on);
+        active_notes[row][col] = note;
+      }
+      else if (!prev_bit && current_bit && active_notes[row][col])
+      {
+        uint8_t note = active_notes[row][col];
+        uint8_t note_off[4] = {
+          (uint8_t)((cable_num << 4) | 0x08),
+          (uint8_t)(0x80 | channel),
+          note,
+          0
+        };
+        tud_midi_packet_write(note_off);
+        active_notes[row][col] = 0;
+      }
+    }
+  }
+
+  for (int i = 0; i < 4; i++)
+  {
+    keypad_prev[i] = keypad_state[i];
+  }
+}
+
+static void MX_SPI_BitBang_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  GPIO_InitStruct.Pin   = SPI_SCK_PIN | SPI_MOSI_PIN;
+  GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull  = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin  = SPI_MISO_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin   = MCP_CS_PIN;
+  GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull  = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(MCP_CS_PORT, &GPIO_InitStruct);
+
+  HAL_GPIO_WritePin(SPI_SCK_PORT, SPI_SCK_PIN, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(SPI_MOSI_PORT, SPI_MOSI_PIN, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MCP_CS_PORT, MCP_CS_PIN, GPIO_PIN_SET);
+}
+
+static uint8_t spi_transfer_byte(uint8_t data)
+{
+  uint8_t received = 0;
+
+  for (int i = 7; i >= 0; i--)
+  {
+    HAL_GPIO_WritePin(SPI_MOSI_PORT, SPI_MOSI_PIN, (data & (1u << i)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(SPI_SCK_PORT, SPI_SCK_PIN, GPIO_PIN_SET);
+    if (HAL_GPIO_ReadPin(SPI_MISO_PORT, SPI_MISO_PIN) == GPIO_PIN_SET)
+    {
+      received |= (1u << i);
+    }
+    HAL_GPIO_WritePin(SPI_SCK_PORT, SPI_SCK_PIN, GPIO_PIN_RESET);
+  }
+
+  return received;
+}
+
+static void mcp23s17_cs_low(void)
+{
+  HAL_GPIO_WritePin(MCP_CS_PORT, MCP_CS_PIN, GPIO_PIN_RESET);
+}
+
+static void mcp23s17_cs_high(void)
+{
+  HAL_GPIO_WritePin(MCP_CS_PORT, MCP_CS_PIN, GPIO_PIN_SET);
+}
+
+static void mcp23s17_write_reg(uint8_t reg, uint8_t value)
+{
+  uint8_t opcode = MCP23S17_ADDR | 0x00;
+  mcp23s17_cs_low();
+  spi_transfer_byte(opcode);
+  spi_transfer_byte(reg);
+  spi_transfer_byte(value);
+  mcp23s17_cs_high();
+}
+
+static uint8_t mcp23s17_read_reg(uint8_t reg)
+{
+  uint8_t opcode = MCP23S17_ADDR | 0x01;
+  mcp23s17_cs_low();
+  spi_transfer_byte(opcode);
+  spi_transfer_byte(reg);
+  uint8_t result = spi_transfer_byte(0x00);
+  mcp23s17_cs_high();
+  return result;
+}
+
+static void mcp23s17_init(void)
+{
+  mcp23s17_write_reg(MCP_IODIRA, 0x0F);
+  mcp23s17_write_reg(MCP_GPPUA,  0x0F);
+  mcp23s17_write_reg(MCP_IODIRB, 0x00);
+  mcp23s17_write_reg(MCP_REG_GPIOB, 0x0F);
+}
+
+static void keypad_scan(void)
+{
+  for (int row = 0; row < 4; row++)
+  {
+    uint8_t row_pattern = (uint8_t)(~(1u << row)) & 0x0F;
+    mcp23s17_write_reg(MCP_REG_GPIOB, row_pattern);
+
+    uint8_t read1 = mcp23s17_read_reg(MCP_REG_GPIOA) & 0x0F;
+    uint8_t read2 = mcp23s17_read_reg(MCP_REG_GPIOA) & 0x0F;
+
+    if (read1 != read2)
+    {
+      keypad_stable_cnt[row] = 0;
+      continue;
+    }
+
+    if (read1 == keypad_candidate[row])
+    {
+      if (keypad_stable_cnt[row] < DEBOUNCE_COUNT)
+      {
+        keypad_stable_cnt[row]++;
+      }
+      if (keypad_stable_cnt[row] >= DEBOUNCE_COUNT)
+      {
+        keypad_state[row] = read1;
+      }
+    }
+    else
+    {
+      keypad_candidate[row] = read1;
+      keypad_stable_cnt[row] = 1;
+    }
+  }
+
+  mcp23s17_write_reg(MCP_REG_GPIOB, 0x0F);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -197,8 +420,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
-  BSP_LED_Off(LED_GREEN);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -232,10 +453,13 @@ int main(void)
   /* Start ADC with DMA (adc_buffer is automatically filled with 2 potentiometer values) */
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buffer, NUM_POTS);
 
+  /* Initialize bit-bang SPI and matrix expander */
+  MX_SPI_BitBang_Init();
+  mcp23s17_init();
+
   /* USER CODE END 2 */
 
-  /* Initialize leds */
-  BSP_LED_Init(LED_GREEN);
+  /* PA5 is used as SPI SCK for matrix, do not init onboard LED here. */
 
   /* Initialize USER push-button, will be used to trigger an interrupt each time it's pressed.*/
   BSP_PB_Init(BUTTON_USER, BUTTON_MODE_EXTI);
@@ -265,6 +489,7 @@ int main(void)
     tud_task();               // USB stack servicing (critical - call frequently!)
     midi_task();              // Handle incoming MIDI data
     led_blinking_task();      // LED status feedback
+    keypad_task();            // Matrix scan + MIDI notes
     process_potentiometers(); // Process ADC buffer and send MIDI CC for all pots
     
     /* USER CODE END WHILE */
