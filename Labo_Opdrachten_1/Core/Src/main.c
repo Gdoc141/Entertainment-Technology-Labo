@@ -79,6 +79,23 @@ static void MX_USB_Init(void);
 static void MX_SPI_BitBang_Init(void);
 
 //--------------------------------------------------------------------+
+// SK6812 LED Configuration (DIN on STM32 board)
+//--------------------------------------------------------------------+
+// DIN is connected to PA8. DOUT stays on the PCB LED chain.
+#define LED_DIN_PORT GPIOA
+#define LED_DIN_PIN  GPIO_PIN_8
+#define LED_COUNT    16
+
+typedef struct
+{
+  uint8_t g;
+  uint8_t r;
+  uint8_t b;
+} sk6812_pixel_t;
+
+static sk6812_pixel_t led_pixels[LED_COUNT];
+
+//--------------------------------------------------------------------+
 // MCP23S17 SPI Keypad Configuration
 //--------------------------------------------------------------------+
 // MCP23S17: 16-pin SPI I/O expander
@@ -155,6 +172,11 @@ static void mcp23s17_init(void);                             // Initialiseer MCP
 static void keypad_scan(void);     // Scant matrix (drive rijen, lees kolommen)
 static void keypad_task(void);     // Detecteert indrukken/loslaten, stuurt MIDI
 
+// SK6812 LED helper functions
+static void leds_init(void);
+static void leds_show(void);
+static void leds_set_button(uint8_t row, uint8_t col, bool on);
+
 // USB Device Core handle
 PCD_HandleTypeDef hpcd_USB_DRD_FS;
 
@@ -222,6 +244,7 @@ int main(void)
   MX_GPIO_Init();              // GPIO init (includes CS pin setup)
   MX_SPI_BitBang_Init();       // Configure bit-bang SPI GPIO pins for MCP23S17
   MX_USB_Init();               // USB Device peripheral init
+  leds_init();                 // Configure and clear SK6812 chain
 
   // NOTE: LED2 (PA5) is NOT used because PA5 is wired to MCP23S17 SCK (D13)
 
@@ -366,6 +389,7 @@ void keypad_task(void)
   // ===== MIDI Configuration =====
   uint8_t cable_num = 0;
   uint8_t channel = 0;
+  bool led_dirty = false;
 
   // ===== Matrix state change detection =====
   for (int row = 0; row < 4; row++)
@@ -393,6 +417,8 @@ void keypad_task(void)
         };
         tud_midi_packet_write(note_on);
         active_notes[row][col] = note;  // Remember which note is active
+        leds_set_button((uint8_t) row, (uint8_t) col, true);
+        led_dirty = true;
       }
 
       // ===== KEY RELEASED (0→1 transition) =====
@@ -411,8 +437,15 @@ void keypad_task(void)
         };
         tud_midi_packet_write(note_off);
         active_notes[row][col] = 0;  // Mark note as inactive
+        leds_set_button((uint8_t) row, (uint8_t) col, false);
+        led_dirty = true;
       }
     }
+  }
+
+  if (led_dirty)
+  {
+    leds_show();
   }
 
   // ===== Debug: stuur CC per rij met raw GPIOA waarde =====
@@ -485,6 +518,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);     // CS initially HIGH (inactive)
+
+  // ===== SK6812 DIN Pin (PA8) =====
+  GPIO_InitStruct.Pin = LED_DIN_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(LED_DIN_PORT, &GPIO_InitStruct);
+  HAL_GPIO_WritePin(LED_DIN_PORT, LED_DIN_PIN, GPIO_PIN_RESET);
 }
 
 //--------------------------------------------------------------------+
@@ -782,6 +823,113 @@ static void keypad_scan(void)
 
   // Zet alle rijen terug hoog (inactief) via GPIOB
   mcp23s17_write_reg(MCP_REG_GPIOB, 0x0F);
+}
+
+//--------------------------------------------------------------------+
+// SK6812 LED Driver (bit-banged on PA8)
+//--------------------------------------------------------------------+
+// Timing target @ 32 MHz core clock:
+// - T0H ~0.30us, T0L ~0.90us
+// - T1H ~0.60us, T1L ~0.60us
+// - Reset latch >= 80us
+static inline void led_din_high(void)
+{
+  LED_DIN_PORT->BSRR = LED_DIN_PIN;
+}
+
+static inline void led_din_low(void)
+{
+  LED_DIN_PORT->BSRR = ((uint32_t) LED_DIN_PIN << 16U);
+}
+
+static inline void delay_cycles(uint32_t cycles)
+{
+  while (cycles--)
+  {
+    __NOP();
+  }
+}
+
+static void sk6812_send_bit(bool bit)
+{
+  led_din_high();
+  if (bit)
+  {
+    delay_cycles(14);
+    led_din_low();
+    delay_cycles(8);
+  }
+  else
+  {
+    delay_cycles(6);
+    led_din_low();
+    delay_cycles(16);
+  }
+}
+
+static void sk6812_send_byte(uint8_t value)
+{
+  for (int bit = 7; bit >= 0; bit--)
+  {
+    sk6812_send_bit(((value >> bit) & 0x01u) != 0u);
+  }
+}
+
+static inline uint8_t button_to_led_index(uint8_t row, uint8_t col)
+{
+  return (uint8_t) (row * 4u + col);
+}
+
+static void leds_set_button(uint8_t row, uint8_t col, bool on)
+{
+  uint8_t index = button_to_led_index(row, col);
+  if (index >= LED_COUNT)
+  {
+    return;
+  }
+
+  if (on)
+  {
+    led_pixels[index].r = 0x20;
+    led_pixels[index].g = 0x20;
+    led_pixels[index].b = 0x20;
+  }
+  else
+  {
+    led_pixels[index].r = 0x00;
+    led_pixels[index].g = 0x00;
+    led_pixels[index].b = 0x00;
+  }
+}
+
+static void leds_show(void)
+{
+  __disable_irq();
+  for (uint8_t i = 0; i < LED_COUNT; i++)
+  {
+    // SK6812 expects GRB byte order for each LED.
+    sk6812_send_byte(led_pixels[i].g);
+    sk6812_send_byte(led_pixels[i].r);
+    sk6812_send_byte(led_pixels[i].b);
+  }
+  __enable_irq();
+
+  // Latch/reset period.
+  for (volatile uint32_t i = 0; i < 4000u; i++)
+  {
+    __NOP();
+  }
+}
+
+static void leds_init(void)
+{
+  for (uint8_t i = 0; i < LED_COUNT; i++)
+  {
+    led_pixels[i].r = 0;
+    led_pixels[i].g = 0;
+    led_pixels[i].b = 0;
+  }
+  leds_show();
 }
 
 //--------------------------------------------------------------------+

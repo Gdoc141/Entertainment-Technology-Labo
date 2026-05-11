@@ -53,6 +53,11 @@
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+__WEAK uint32_t tusb_time_millis_api(void)
+{
+  return HAL_GetTick();
+}
+
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
